@@ -16,3 +16,7 @@ bool semanticParseRENAME();
 bool semanticParseSELECTION();
 bool semanticParseSORT();
 bool semanticParseSOURCE();
+bool semanticParseLOADMAT();
+bool semanticParsePRINTMAT();
+bool semanticParseEXPORTMAT();
+bool semanticParseTRANSPOSEMAT();

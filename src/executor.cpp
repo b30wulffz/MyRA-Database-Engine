@@ -17,6 +17,10 @@ void executeCommand(){
         case SELECTION: executeSELECTION(); break;
         case SORT: executeSORT(); break;
         case SOURCE: executeSOURCE(); break;
+        case LOADMAT: executeLOADMAT(); break;
+        case PRINTMAT: executePRINTMAT(); break;
+        case EXPORTMAT: executeEXPORTMAT(); break;
+        case TRANSPOSEMAT: executeTRANSPOSEMAT(); break;
         default: cout<<"PARSING ERROR"<<endl;
     }
 

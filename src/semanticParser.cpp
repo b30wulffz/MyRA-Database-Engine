@@ -10,7 +10,6 @@ bool semanticParse(){
         case INDEX: return semanticParseINDEX();
         case JOIN: return semanticParseJOIN();
         case LIST: return semanticParseLIST();
-        // matrix - loadM
         case LOAD: return semanticParseLOAD();
         case PRINT: return semanticParsePRINT();
         case PROJECTION: return semanticParsePROJECTION();
@@ -18,6 +17,10 @@ bool semanticParse(){
         case SELECTION: return semanticParseSELECTION();
         case SORT: return semanticParseSORT();
         case SOURCE: return semanticParseSOURCE();
+        case LOADMAT: return semanticParseLOADMAT();
+        case PRINTMAT: return semanticParsePRINTMAT();
+        case EXPORTMAT: return semanticParseEXPORTMAT();
+        case TRANSPOSEMAT: return semanticParseTRANSPOSEMAT();
         default: cout<<"SEMANTIC ERROR"<<endl;
     }
 

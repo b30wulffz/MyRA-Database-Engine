@@ -16,6 +16,10 @@ void executeRENAME();
 void executeSELECTION();
 void executeSORT();
 void executeSOURCE();
+void executeLOADMAT();
+void executePRINTMAT();
+void executeEXPORTMAT();
+void executeTRANSPOSEMAT();
 
 bool evaluateBinOp(int value1, int value2, BinaryOperator binaryOperator);
 void printRowCount(int rowCount);

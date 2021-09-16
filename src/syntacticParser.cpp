@@ -11,48 +11,59 @@ bool syntacticParse()
         return false;
     }
 
-    if (possibleQueryType == "CLEAR")
-        return syntacticParseCLEAR();
-    else if (possibleQueryType == "INDEX")
-        return syntacticParseINDEX();
-    else if (possibleQueryType == "LIST")
-        return syntacticParseLIST();
-    // matrix - load
-    else if (possibleQueryType == "LOAD")
-        return syntacticParseLOAD();
-    else if (possibleQueryType == "PRINT")
-        return syntacticParsePRINT();
-    else if (possibleQueryType == "RENAME")
-        return syntacticParseRENAME();
-    else if (possibleQueryType == "EXPORT")
-        return syntacticParseEXPORT();
-    else if (possibleQueryType == "SOURCE")
-        return syntacticParseSOURCE();
-    else
-    {
-        string resultantRelationName = possibleQueryType;
-        if (tokenizedQuery[1] != "<-" || tokenizedQuery.size() < 3)
-        {
-            cout << "SYNTAX ERROR" << endl;
-            return false;
-        }
-        possibleQueryType = tokenizedQuery[2];
-        if (possibleQueryType == "PROJECT")
-            return syntacticParsePROJECTION();
-        else if (possibleQueryType == "SELECT")
-            return syntacticParseSELECTION();
-        else if (possibleQueryType == "JOIN")
-            return syntacticParseJOIN();
-        else if (possibleQueryType == "CROSS")
-            return syntacticParseCROSS();
-        else if (possibleQueryType == "DISTINCT")
-            return syntacticParseDISTINCT();
-        else if (possibleQueryType == "SORT")
-            return syntacticParseSORT();
+    if(tokenizedQuery[1] == "MATRIX" && tokenizedQuery.size() == 3){
+        if (possibleQueryType == "LOAD")
+            return syntacticParseLOADMAT();
+        else if (possibleQueryType == "PRINT")
+            return syntacticParsePRINTMAT();
+        else if (possibleQueryType == "EXPORT")
+            return syntacticParseEXPORTMAT();
+    }
+    else{
+        if (possibleQueryType == "CLEAR")
+            return syntacticParseCLEAR();
+        else if (possibleQueryType == "INDEX")
+            return syntacticParseINDEX();
+        else if (possibleQueryType == "LIST")
+            return syntacticParseLIST();
+        else if (possibleQueryType == "LOAD")
+            return syntacticParseLOAD();
+        else if (possibleQueryType == "PRINT")
+            return syntacticParsePRINT();
+        else if (possibleQueryType == "RENAME")
+            return syntacticParseRENAME();
+        else if (possibleQueryType == "EXPORT")
+            return syntacticParseEXPORT();
+        else if (possibleQueryType == "SOURCE")
+            return syntacticParseSOURCE();
+        else if (possibleQueryType == "TRANSPOSE")
+            return syntacticParseTRANSPOSEMAT();
         else
         {
-            cout << "SYNTAX ERROR" << endl;
-            return false;
+            string resultantRelationName = possibleQueryType;
+            if (tokenizedQuery[1] != "<-" || tokenizedQuery.size() < 3)
+            {
+                cout << "SYNTAX ERROR" << endl;
+                return false;
+            }
+            possibleQueryType = tokenizedQuery[2];
+            if (possibleQueryType == "PROJECT")
+                return syntacticParsePROJECTION();
+            else if (possibleQueryType == "SELECT")
+                return syntacticParseSELECTION();
+            else if (possibleQueryType == "JOIN")
+                return syntacticParseJOIN();
+            else if (possibleQueryType == "CROSS")
+                return syntacticParseCROSS();
+            else if (possibleQueryType == "DISTINCT")
+                return syntacticParseDISTINCT();
+            else if (possibleQueryType == "SORT")
+                return syntacticParseSORT();
+            else
+            {
+                cout << "SYNTAX ERROR" << endl;
+                return false;
+            }
         }
     }
     return false;

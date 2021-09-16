@@ -6,8 +6,7 @@
 bool syntacticParseLIST()
 {
     logger.log("syntacticParseLIST");
-    if (tokenizedQuery.size() != 2 || tokenizedQuery[1] != "TABLES")
-    {
+    if (tokenizedQuery.size() != 2 || tokenizedQuery[1] != "TABLES") {
         cout << "SYNTAX ERROR" << endl;
         return false;
     }

@@ -6,8 +6,7 @@
 bool syntacticParseRENAME()
 {
     logger.log("syntacticParseRENAME");
-    if (tokenizedQuery.size() != 6 || tokenizedQuery[2] != "TO" || tokenizedQuery[4] != "FROM")
-    {
+    if (tokenizedQuery.size() != 6 || tokenizedQuery[2] != "TO" || tokenizedQuery[4] != "FROM") {
         cout << "SYNTAX ERROR" << endl;
         return false;
     }
@@ -22,20 +21,17 @@ bool semanticParseRENAME()
 {
     logger.log("semanticParseRENAME");
 
-    if (!tableCatalogue.isTable(parsedQuery.renameRelationName))
-    {
+    if (!tableCatalogue.isTable(parsedQuery.renameRelationName)) {
         cout << "SEMANTIC ERROR: Relation doesn't exist" << endl;
         return false;
     }
 
-    if (!tableCatalogue.isColumnFromTable(parsedQuery.renameFromColumnName, parsedQuery.renameRelationName))
-    {
+    if (!tableCatalogue.isColumnFromTable(parsedQuery.renameFromColumnName, parsedQuery.renameRelationName)) {
         cout << "SEMANTIC ERROR: Column doesn't exist in relation" << endl;
         return false;
     }
 
-    if (tableCatalogue.isColumnFromTable(parsedQuery.renameToColumnName, parsedQuery.renameRelationName))
-    {
+    if (tableCatalogue.isColumnFromTable(parsedQuery.renameToColumnName, parsedQuery.renameRelationName)) {
         cout << "SEMANTIC ERROR: Column with name already exists" << endl;
         return false;
     }

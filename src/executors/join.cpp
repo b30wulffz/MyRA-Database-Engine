@@ -6,8 +6,7 @@
 bool syntacticParseJOIN()
 {
     logger.log("syntacticParseJOIN");
-    if (tokenizedQuery.size() != 9 || tokenizedQuery[5] != "ON")
-    {
+    if (tokenizedQuery.size() != 9 || tokenizedQuery[5] != "ON") {
         cout << "SYNTAC ERROR" << endl;
         return false;
     }
@@ -31,8 +30,7 @@ bool syntacticParseJOIN()
         parsedQuery.joinBinaryOperator = EQUAL;
     else if (binaryOperator == "!=")
         parsedQuery.joinBinaryOperator = NOT_EQUAL;
-    else
-    {
+    else {
         cout << "SYNTAX ERROR" << endl;
         return false;
     }
@@ -43,20 +41,17 @@ bool semanticParseJOIN()
 {
     logger.log("semanticParseJOIN");
 
-    if (tableCatalogue.isTable(parsedQuery.joinResultRelationName))
-    {
+    if (tableCatalogue.isTable(parsedQuery.joinResultRelationName)) {
         cout << "SEMANTIC ERROR: Resultant relation already exists" << endl;
         return false;
     }
 
-    if (!tableCatalogue.isTable(parsedQuery.joinFirstRelationName) || !tableCatalogue.isTable(parsedQuery.joinSecondRelationName))
-    {
+    if (!tableCatalogue.isTable(parsedQuery.joinFirstRelationName) || !tableCatalogue.isTable(parsedQuery.joinSecondRelationName)) {
         cout << "SEMANTIC ERROR: Relation doesn't exist" << endl;
         return false;
     }
 
-    if (!tableCatalogue.isColumnFromTable(parsedQuery.joinFirstColumnName, parsedQuery.joinFirstRelationName) || !tableCatalogue.isColumnFromTable(parsedQuery.joinSecondColumnName, parsedQuery.joinSecondRelationName))
-    {
+    if (!tableCatalogue.isColumnFromTable(parsedQuery.joinFirstColumnName, parsedQuery.joinFirstRelationName) || !tableCatalogue.isColumnFromTable(parsedQuery.joinSecondColumnName, parsedQuery.joinSecondRelationName)) {
         cout << "SEMANTIC ERROR: Column doesn't exist in relation" << endl;
         return false;
     }

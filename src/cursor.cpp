@@ -21,9 +21,9 @@ vector<int> Cursor::getNext() // SP: needs to be reworked as a row may or may no
     logger.log("Cursor::geNext");
     vector<int> result = this->page.getRow(this->pagePointer); // SP: pagepointer means current row in a page
     this->pagePointer++;
-    if(result.empty()){ // SP: If row pointer points to a row index larger than the one stored in current page/block
+    if (result.empty()) { // SP: If row pointer points to a row index larger than the one stored in current page/block
         tableCatalogue.getTable(this->tableName)->getNextPage(this);
-        if(!this->pagePointer){ // SP: When pagepointer > Row count in a page
+        if (!this->pagePointer) { // SP: When pagepointer > Row count in a page
             result = this->page.getRow(this->pagePointer);
             this->pagePointer++;
         }

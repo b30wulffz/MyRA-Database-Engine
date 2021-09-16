@@ -16,7 +16,7 @@ BufferManager::BufferManager() // SP: Deals with pages
 Page BufferManager::getPage(string tableName, int pageIndex)
 {
     logger.log("BufferManager::getPage");
-    string pageName = "../data/temp/"+tableName + "_Page" + to_string(pageIndex);
+    string pageName = "../data/temp/" + tableName + "_Page" + to_string(pageIndex);
     if (this->inPool(pageName))
         return this->getFromPool(pageName);
     else
@@ -33,8 +33,7 @@ Page BufferManager::getPage(string tableName, int pageIndex)
 bool BufferManager::inPool(string pageName)
 {
     logger.log("BufferManager::inPool");
-    for (auto page : this->pages)
-    {
+    for (auto page : this->pages) {
         if (pageName == page.pageName)
             return true;
     }
@@ -99,10 +98,11 @@ void BufferManager::writePage(string tableName, int pageIndex, vector<vector<int
  */
 void BufferManager::deleteFile(string fileName)
 {
-    
+
     if (remove(fileName.c_str()))
         logger.log("BufferManager::deleteFile: Err");
-        else logger.log("BufferManager::deleteFile: Success");
+    else
+        logger.log("BufferManager::deleteFile: Success");
 }
 
 /**
@@ -115,6 +115,6 @@ void BufferManager::deleteFile(string fileName)
 void BufferManager::deleteFile(string tableName, int pageIndex)
 {
     logger.log("BufferManager::deleteFile");
-    string fileName = "../data/temp/"+tableName + "_Page" + to_string(pageIndex);
+    string fileName = "../data/temp/" + tableName + "_Page" + to_string(pageIndex);
     this->deleteFile(fileName);
 }

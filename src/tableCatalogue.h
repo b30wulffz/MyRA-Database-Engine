@@ -6,13 +6,12 @@
  * be added(removed) to(from) the tableCatalogue. 
  *
  */
-class TableCatalogue
-{
+class TableCatalogue {
 
     unordered_map<string, Table*> tables;
 
 public:
-    TableCatalogue() {}
+    TableCatalogue() { }
     void insertTable(Table* table);
     void deleteTable(string tableName);
     Table* getTable(string tableName);

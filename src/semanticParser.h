@@ -1,4 +1,4 @@
-#include"syntacticParser.h"
+#include "syntacticParser.h"
 
 bool semanticParse();
 

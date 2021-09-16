@@ -6,8 +6,7 @@
 bool syntacticParsePRINT()
 {
     logger.log("syntacticParsePRINT");
-    if (tokenizedQuery.size() != 2)
-    {
+    if (tokenizedQuery.size() != 2) {
         cout << "SYNTAX ERROR" << endl;
         return false;
     }
@@ -19,8 +18,7 @@ bool syntacticParsePRINT()
 bool semanticParsePRINT()
 {
     logger.log("semanticParsePRINT");
-    if (!tableCatalogue.isTable(parsedQuery.printRelationName))
-    {
+    if (!tableCatalogue.isTable(parsedQuery.printRelationName)) {
         cout << "SEMANTIC ERROR: Relation doesn't exist" << endl;
         return false;
     }

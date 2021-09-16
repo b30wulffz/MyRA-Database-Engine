@@ -8,8 +8,7 @@
 bool syntacticParseEXPORTMAT()
 {
     logger.log("syntacticParseEXPORTMAT");
-    if (tokenizedQuery.size() != 2)
-    {
+    if (tokenizedQuery.size() != 2) {
         cout << "SYNTAX ERROR" << endl;
         return false;
     }

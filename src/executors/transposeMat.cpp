@@ -8,8 +8,7 @@
 bool syntacticParseTRANSPOSEMAT()
 {
     logger.log("syntacticParseTRANSPOSEMAT");
-    if (tokenizedQuery.size() != 2)
-    {
+    if (tokenizedQuery.size() != 2) {
         cout << "SYNTAX ERROR" << endl;
         return false;
     }

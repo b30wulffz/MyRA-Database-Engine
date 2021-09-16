@@ -1,4 +1,4 @@
-#include"page.h"
+#include "page.h"
 
 /**
  * @brief The BufferManager is responsible for reading pages to the main memory.
@@ -20,15 +20,14 @@
  * </p>
  *
  */
-class BufferManager{
+class BufferManager {
 
     deque<Page> pages; // SP: Stores data of pages from temp folder
     bool inPool(string pageName);
     Page getFromPool(string pageName);
     Page insertIntoPool(string tableName, int pageIndex);
 
-    public:
-    
+public:
     BufferManager();
     Page getPage(string tableName, int pageIndex);
     void writePage(string pageName, vector<vector<int>> rows);

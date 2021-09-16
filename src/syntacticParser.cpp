@@ -5,21 +5,19 @@ bool syntacticParse()
     logger.log("syntacticParse");
     string possibleQueryType = tokenizedQuery[0];
 
-    if (tokenizedQuery.size() < 2)
-    {
+    if (tokenizedQuery.size() < 2) {
         cout << "SYNTAX ERROR" << endl;
         return false;
     }
 
-    if(tokenizedQuery[1] == "MATRIX" && tokenizedQuery.size() == 3){
+    if (tokenizedQuery[1] == "MATRIX" && tokenizedQuery.size() == 3) {
         if (possibleQueryType == "LOAD")
             return syntacticParseLOADMAT();
         else if (possibleQueryType == "PRINT")
             return syntacticParsePRINTMAT();
         else if (possibleQueryType == "EXPORT")
             return syntacticParseEXPORTMAT();
-    }
-    else{
+    } else {
         if (possibleQueryType == "CLEAR")
             return syntacticParseCLEAR();
         else if (possibleQueryType == "INDEX")
@@ -38,11 +36,9 @@ bool syntacticParse()
             return syntacticParseSOURCE();
         else if (possibleQueryType == "TRANSPOSE")
             return syntacticParseTRANSPOSEMAT();
-        else
-        {
+        else {
             string resultantRelationName = possibleQueryType;
-            if (tokenizedQuery[1] != "<-" || tokenizedQuery.size() < 3)
-            {
+            if (tokenizedQuery[1] != "<-" || tokenizedQuery.size() < 3) {
                 cout << "SYNTAX ERROR" << endl;
                 return false;
             }
@@ -59,8 +55,7 @@ bool syntacticParse()
                 return syntacticParseDISTINCT();
             else if (possibleQueryType == "SORT")
                 return syntacticParseSORT();
-            else
-            {
+            else {
                 cout << "SYNTAX ERROR" << endl;
                 return false;
             }

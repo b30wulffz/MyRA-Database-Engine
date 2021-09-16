@@ -8,9 +8,9 @@ void TableCatalogue::insertTable(Table* table)
 void TableCatalogue::deleteTable(string tableName)
 {
     logger.log("TableCatalogue::deleteTable"); 
-    this->tables[tableName]->unload();
-    delete this->tables[tableName];
-    this->tables.erase(tableName);
+    this->tables[tableName]->unload(); // SP: deleting temp files
+    delete this->tables[tableName]; // SP: deleting address/memory
+    this->tables.erase(tableName); // SP: Removing key
 }
 Table* TableCatalogue::getTable(string tableName)
 {

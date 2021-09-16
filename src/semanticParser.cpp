@@ -10,6 +10,7 @@ bool semanticParse(){
         case INDEX: return semanticParseINDEX();
         case JOIN: return semanticParseJOIN();
         case LIST: return semanticParseLIST();
+        // matrix - loadM
         case LOAD: return semanticParseLOAD();
         case PRINT: return semanticParsePRINT();
         case PROJECTION: return semanticParsePROJECTION();

@@ -25,7 +25,7 @@ Page::Page()
  * @param tableName 
  * @param pageIndex 
  */
-Page::Page(string tableName, int pageIndex)
+Page::Page(string tableName, int pageIndex) // SP: Loading a page stored in temp
 {
     logger.log("Page::Page");
     this->tableName = tableName;
@@ -37,7 +37,7 @@ Page::Page(string tableName, int pageIndex)
     vector<int> row(columnCount, 0);
     this->rows.assign(maxRowCount, row);
 
-    ifstream fin(pageName, ios::in);
+    ifstream fin(pageName, ios::in); // SP: Loading the stream from stored page
     this->rowCount = table.rowsPerBlockCount[pageIndex];
     int number;
     for (uint rowCounter = 0; rowCounter < this->rowCount; rowCounter++)
@@ -45,7 +45,7 @@ Page::Page(string tableName, int pageIndex)
         for (int columnCounter = 0; columnCounter < columnCount; columnCounter++)
         {
             fin >> number;
-            this->rows[rowCounter][columnCounter] = number;
+            this->rows[rowCounter][columnCounter] = number; // SP: Copying the data in a vector from a page
         }
     }
     fin.close();
@@ -67,7 +67,7 @@ vector<int> Page::getRow(int rowIndex)
     return this->rows[rowIndex];
 }
 
-Page::Page(string tableName, int pageIndex, vector<vector<int>> rows, int rowCount)
+Page::Page(string tableName, int pageIndex, vector<vector<int>> rows, int rowCount) // SP: generating a page from data
 {
     logger.log("Page::Page");
     this->tableName = tableName;
@@ -86,7 +86,7 @@ void Page::writePage()
 {
     logger.log("Page::writePage");
     ofstream fout(this->pageName, ios::trunc);
-    for (int rowCounter = 0; rowCounter < this->rowCount; rowCounter++)
+    for (int rowCounter = 0; rowCounter < this->rowCount; rowCounter++) // SP: writing just the data in page
     {
         for (int columnCounter = 0; columnCounter < this->columnCount; columnCounter++)
         {

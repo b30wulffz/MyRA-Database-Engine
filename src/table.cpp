@@ -38,7 +38,7 @@ Table::Table(string tableName, vector<string> columns)
     this->tableName = tableName;
     this->columns = columns;
     this->columnCount = columns.size();
-    this->maxRowsPerBlock = (uint)((BLOCK_SIZE * 1000) / (sizeof(int) * columnCount));
+    this->maxRowsPerBlock = (uint)((BLOCK_SIZE * 1000) / (sizeof(int) * columnCount)); // SP: fitting a row inside a block // fix this in matrix 
     this->writeRow<string>(columns);
 }
 
@@ -53,7 +53,7 @@ Table::Table(string tableName, vector<string> columns)
 bool Table::load()
 {
     logger.log("Table::load");
-    fstream fin(this->sourceFileName, ios::in);
+    fstream fin(this->sourceFileName, ios::in); // SP: Improve: logically, this can be checked in extractColumnNames just like blockify
     string line;
     if (getline(fin, line))
     {
@@ -75,7 +75,7 @@ bool Table::load()
  * repeats)
  * @return false otherwise
  */
-bool Table::extractColumnNames(string firstLine)
+bool Table::extractColumnNames(string firstLine) // SP: No need to call this for matrix // just start writing
 {
     logger.log("Table::extractColumnNames");
     unordered_set<string> columnNames;
@@ -90,7 +90,7 @@ bool Table::extractColumnNames(string firstLine)
         this->columns.emplace_back(word);
     }
     this->columnCount = this->columns.size();
-    this->maxRowsPerBlock = (uint)((BLOCK_SIZE * 1000) / (sizeof(int) * this->columnCount));
+    this->maxRowsPerBlock = (uint)((BLOCK_SIZE * 1000) / (sizeof(int) * this->columnCount)); // SP: Meat
     return true;
 }
 
@@ -104,11 +104,11 @@ bool Table::extractColumnNames(string firstLine)
 bool Table::blockify()
 {
     logger.log("Table::blockify");
-    ifstream fin(this->sourceFileName, ios::in);
+    ifstream fin(this->sourceFileName, ios::in); // SP: Improve: fin close
     string line, word;
-    vector<int> row(this->columnCount, 0);
-    vector<vector<int>> rowsInPage(this->maxRowsPerBlock, row);
-    int pageCounter = 0;
+    vector<int> row(this->columnCount, 0); // SP: So basically a row is being stored in a vector, assuming its values to be integer
+    vector<vector<int>> rowsInPage(this->maxRowsPerBlock, row); // SP: This stores all such rows, which are to be written in a single block
+    int pageCounter = 0; // SP: Improve: Change name to currentRowInBlock
     unordered_set<int> dummy;
     dummy.clear();
     this->distinctValuesInColumns.assign(this->columnCount, dummy);
@@ -124,17 +124,17 @@ bool Table::blockify()
             row[columnCounter] = stoi(word);
             rowsInPage[pageCounter][columnCounter] = row[columnCounter];
         }
-        pageCounter++;
+        pageCounter++; // SP: Counting rows?
         this->updateStatistics(row);
-        if (pageCounter == this->maxRowsPerBlock)
+        if (pageCounter == this->maxRowsPerBlock) // SP: once row count exceeds, write in page
         {
             bufferManager.writePage(this->tableName, this->blockCount, rowsInPage, pageCounter);
             this->blockCount++;
-            this->rowsPerBlockCount.emplace_back(pageCounter);
+            this->rowsPerBlockCount.emplace_back(pageCounter); // SP: Vector storing count of rows in ith block
             pageCounter = 0;
         }
     }
-    if (pageCounter)
+    if (pageCounter) //SP: write rest of the page
     {
         bufferManager.writePage(this->tableName, this->blockCount, rowsInPage, pageCounter);
         this->blockCount++;
@@ -144,7 +144,7 @@ bool Table::blockify()
 
     if (this->rowCount == 0)
         return false;
-    this->distinctValuesInColumns.clear();
+    this->distinctValuesInColumns.clear(); // SP: Cleared optimization thingy
     return true;
 }
 
@@ -161,10 +161,10 @@ void Table::updateStatistics(vector<int> row)
     this->rowCount++;
     for (int columnCounter = 0; columnCounter < this->columnCount; columnCounter++)
     {
-        if (!this->distinctValuesInColumns[columnCounter].count(row[columnCounter]))
+        if (!this->distinctValuesInColumns[columnCounter].count(row[columnCounter])) // SP: check if a particular value(from a row) is present in column
         {
             this->distinctValuesInColumns[columnCounter].insert(row[columnCounter]);
-            this->distinctValuesPerColumnCount[columnCounter]++;
+            this->distinctValuesPerColumnCount[columnCounter]++; // SP: increasing count for that particular column
         }
     }
 }
@@ -229,7 +229,7 @@ void Table::print()
     vector<int> row;
     for (int rowCounter = 0; rowCounter < count; rowCounter++)
     {
-        row = cursor.getNext();
+        row = cursor.getNext(); // gets a row from page on pageIndex
         this->writeRow(row, cout);
     }
     printRowCount(this->rowCount);
@@ -248,7 +248,7 @@ void Table::getNextPage(Cursor *cursor)
 {
     logger.log("Table::getNext");
 
-        if (cursor->pageIndex < this->blockCount - 1)
+        if (cursor->pageIndex < this->blockCount - 1) // SP: If pages have pageindex under the limit
         {
             cursor->nextPage(cursor->pageIndex+1);
         }

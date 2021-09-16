@@ -22,7 +22,7 @@
  */
 class BufferManager{
 
-    deque<Page> pages; 
+    deque<Page> pages; // SP: Stores data of pages from temp folder
     bool inPool(string pageName);
     Page getFromPool(string pageName);
     Page insertIntoPool(string tableName, int pageIndex);

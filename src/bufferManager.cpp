@@ -1,6 +1,6 @@
 #include "global.h"
 
-BufferManager::BufferManager()
+BufferManager::BufferManager() // SP: Deals with pages
 {
     logger.log("BufferManager::BufferManager");
 }
@@ -20,7 +20,7 @@ Page BufferManager::getPage(string tableName, int pageIndex)
     if (this->inPool(pageName))
         return this->getFromPool(pageName);
     else
-        return this->insertIntoPool(tableName, pageIndex);
+        return this->insertIntoPool(tableName, pageIndex); // SP: Loads a page from tmp folder, stoes its data in a 2d vector, and saves entire instance in pool
 }
 
 /**
@@ -70,7 +70,7 @@ Page BufferManager::insertIntoPool(string tableName, int pageIndex)
 {
     logger.log("BufferManager::insertIntoPool");
     Page page(tableName, pageIndex);
-    if (this->pages.size() >= BLOCK_COUNT)
+    if (this->pages.size() >= BLOCK_COUNT) // SP: maintained a DEQUE for pages, with BLOCK_COUNT to be the allowed size of pages that can be brought to main memory
         pages.pop_front();
     pages.push_back(page);
     return page;
@@ -85,7 +85,7 @@ Page BufferManager::insertIntoPool(string tableName, int pageIndex)
  * @param rows 
  * @param rowCount 
  */
-void BufferManager::writePage(string tableName, int pageIndex, vector<vector<int>> rows, int rowCount)
+void BufferManager::writePage(string tableName, int pageIndex, vector<vector<int>> rows, int rowCount) // SP: rowCount basically tells how many rows are to be written from 2d matrix in the page having pageIndex
 {
     logger.log("BufferManager::writePage");
     Page page(tableName, pageIndex, rows, rowCount);

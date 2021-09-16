@@ -12,7 +12,7 @@ bool syntacticParseTRANSPOSEMAT()
         cout << "SYNTAX ERROR" << endl;
         return false;
     }
-    parsedQuery.queryType = EXPORT;
+    parsedQuery.queryType = TRANSPOSEMAT;
     parsedQuery.exportRelationName = tokenizedQuery[1];
     return true;
 }
@@ -20,8 +20,8 @@ bool syntacticParseTRANSPOSEMAT()
 bool semanticParseTRANSPOSEMAT()
 {
     logger.log("semanticParseTRANSPOSEMAT");
-    //Table should exist
-    if (tableCatalogue.isTable(parsedQuery.exportRelationName))
+    // Table should exist
+    if (matrixCatalogue.isMatrix(parsedQuery.exportRelationName))
         return true;
     cout << "SEMANTIC ERROR: No such relation exists" << endl;
     return false;
@@ -30,7 +30,7 @@ bool semanticParseTRANSPOSEMAT()
 void executeTRANSPOSEMAT()
 {
     logger.log("executeTRANSPOSEMAT");
-    Table* table = tableCatalogue.getTable(parsedQuery.exportRelationName);
-    table->makePermanent();
+    Matrix* matrix = matrixCatalogue.getMatrix(parsedQuery.exportRelationName);
+    // SP: logic to transpose
     return;
 }

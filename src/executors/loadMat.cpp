@@ -6,20 +6,20 @@
 bool syntacticParseLOADMAT()
 {
     logger.log("syntacticParseLOADMAT");
-    if (tokenizedQuery.size() != 2) {
+    if (tokenizedQuery.size() != 3) {
         cout << "SYNTAX ERROR" << endl;
         return false;
     }
-    parsedQuery.queryType = LOAD;
-    parsedQuery.loadRelationName = tokenizedQuery[1];
+    parsedQuery.queryType = LOADMAT;
+    parsedQuery.loadRelationName = tokenizedQuery[2];
     return true;
 }
 
 bool semanticParseLOADMAT()
 {
     logger.log("semanticParseLOADMAT");
-    if (tableCatalogue.isTable(parsedQuery.loadRelationName)) {
-        cout << "SEMANTIC ERROR: Relation already exists" << endl;
+    if (matrixCatalogue.isMatrix(parsedQuery.loadRelationName)) {
+        cout << "SEMANTIC ERROR: Matrix already exists" << endl;
         return false;
     }
 
@@ -34,10 +34,10 @@ void executeLOADMAT()
 {
     logger.log("executeLOADMAT");
 
-    Table* table = new Table(parsedQuery.loadRelationName);
-    if (table->load()) {
-        tableCatalogue.insertTable(table);
-        cout << "Loaded Table. Column Count: " << table->columnCount << " Row Count: " << table->rowCount << endl;
+    Matrix* matrix = new Matrix(parsedQuery.loadRelationName);
+    if (matrix->load()) {
+        matrixCatalogue.insertMatrix(matrix);
+        cout << "Loaded Matrix. Column Count: " << matrix->columnCount << " Row Count: " << matrix->rowCount << endl;
     }
     return;
 }

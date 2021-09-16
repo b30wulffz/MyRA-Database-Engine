@@ -11,6 +11,7 @@ public:
     int pageIndex;
     string tableName;
     int pagePointer;
+    string currentStruct; // table, matrix
 
 public:
     Cursor(string tableName, int pageIndex);

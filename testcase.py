@@ -12,7 +12,7 @@ count = 0
 
 matrix = []
 
-with open('./data/tc_{}.csv'.format(name), 'w') as f:
+with open('./data/TC_{}.csv'.format(name), 'w') as f:
     for x in range(rows):
         row = []
         for y in range(cols):
@@ -31,6 +31,6 @@ with open('./data/tc_{}.csv'.format(name), 'w') as f:
 
 matrix = numpy.transpose(matrix)
 
-with open('./data/tc_{}_ts.csv'.format(name), 'w') as f:
+with open('./data/TC_{}_TS.csv'.format(name), 'w') as f:
     for row in matrix:
         print(', '.join(str(i) for i in row), file = f)

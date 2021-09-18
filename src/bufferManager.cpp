@@ -92,6 +92,22 @@ void BufferManager::writePage(string tableName, int pageIndex, vector<vector<int
 }
 
 /**
+ * @brief The buffer manager is also responsible for writing pages. This is
+ * called when new tables are created using assignment statements.
+ *
+ * @param tableName 
+ * @param pageIndex 
+ * @param rows 
+ * @param rowCount 
+ */
+void BufferManager::writePage(string tableName, int pageRowIndex, int pageColIndex, vector<vector<int>> rows, int rowCount) // SP: rowCount basically tells how many rows are to be written from 2d matrix in the page having pageIndex
+{
+    logger.log("BufferManager::writePage");
+    Page page(tableName, pageRowIndex, pageColIndex, rows, rowCount);
+    page.writePage();
+}
+
+/**
  * @brief Deletes file names fileName
  *
  * @param fileName 
@@ -118,3 +134,12 @@ void BufferManager::deleteFile(string tableName, int pageIndex)
     string fileName = "../data/temp/" + tableName + "_Page" + to_string(pageIndex);
     this->deleteFile(fileName);
 }
+
+void BufferManager::deleteFile(string matrixName, int pageRowIndex, int pageColIndex)
+{
+    logger.log("BufferManager::deleteFile::Matrix");
+    string fileName = "../data/temp/" + matrixName + "_Page_R" + to_string(pageRowIndex)+"_C"+to_string(pageColIndex);
+    this->deleteFile(fileName);
+}
+
+// bufferManager.writePage(this->matrixName, this->blockCount, row, rowBlockIndex, colBlockIndex);

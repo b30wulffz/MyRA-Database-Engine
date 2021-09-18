@@ -1,10 +1,10 @@
 #include "cursor.h"
 
-enum IndexingStrategy {
-    BTREE,
-    HASH,
-    NOTHING
-};
+// enum IndexingStrategy {
+//     BTREE,
+//     HASH,
+//     NOTHING
+// };
 
 /**
  * @brief The Matrix class holds all information related to a loaded matrix. It
@@ -27,11 +27,15 @@ public:
     uint blockCount = 0;
     uint maxRowsPerBlock = 0;
     vector<uint> rowsPerBlockCount;
+    bool isSparse = false;
+    uint rowBlocks = 0;
+    uint colBlocks = 0;
     // bool indexed = false;
     // string indexedColumn = "";
     // IndexingStrategy indexingStrategy = NOTHING;
 
     // bool extractColumnNames(string firstLine);
+    bool calculateStats();
     bool blockify();
     void updateStatistics(vector<int> row);
     Matrix();

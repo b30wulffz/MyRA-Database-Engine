@@ -8,6 +8,8 @@ Page::Page()
     this->pageName = "";
     this->tableName = "";
     this->pageIndex = -1;
+    this->pageRowIndex = -1;
+    this->pageColIndex = -1;
     this->rowCount = 0;
     this->columnCount = 0;
     this->rows.clear();
@@ -74,6 +76,19 @@ Page::Page(string tableName, int pageIndex, vector<vector<int>> rows, int rowCou
     this->rowCount = rowCount;
     this->columnCount = rows[0].size();
     this->pageName = "../data/temp/" + this->tableName + "_Page" + to_string(pageIndex);
+}
+
+
+Page::Page(string tableName, int pageRowIndex, int pageColIndex, vector<vector<int>> rows, int rowCount) // SP: generating a page from data
+{
+    logger.log("Page::Page");
+    this->tableName = tableName;
+    this->pageRowIndex = pageRowIndex;
+    this->pageColIndex = pageColIndex;
+    this->rows = rows;
+    this->rowCount = rowCount;
+    this->columnCount = rows[0].size();
+    this->pageName = "../data/temp/" + this->tableName + "_Page_R" + to_string(pageRowIndex) +"_C" + to_string(pageColIndex);
 }
 
 /**

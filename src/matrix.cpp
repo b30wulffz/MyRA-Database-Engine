@@ -53,10 +53,33 @@ Matrix::Matrix(string matrixName)
 bool Matrix::load()
 {
     logger.log("Matrix::load");
+    return this->calculateStats() && this->blockify();
+}
 
-    if (this->blockify())
-        return true;
-    return false;
+bool Matrix::calculateStats()
+{
+    ifstream fin(this->sourceFileName, ios::in);
+    string line, value;
+    long long nonZeroCount = 0;
+    bool columnCnt = true;
+    while (getline(fin, line))
+    {
+
+        stringstream rowStream(line);
+        while (getline(rowStream, value, ','))
+        {
+            if (stoi(value) != 0)
+                nonZeroCount++;
+            if(columnCnt)
+                this->columnCount++;
+        }
+        columnCnt = false;
+        this->rowCount++;
+    }
+    fin.close();
+    long long cellsCount = this->columnCount * this->rowCount;
+    if(nonZeroCount <= (int)(0.4*cellsCount)) this->isSparse = true;
+    return true;
 }
 
 /**
@@ -66,69 +89,58 @@ bool Matrix::load()
  * @return true if successfully blockified
  * @return false otherwise
  */
-bool Matrix::blockify() // SP: Load matrix in chunk : Implement
+bool Matrix::blockify() // SP: Load matrix in chunk 44*44 : Implement
 {
+    uint chunkCols = 2;
+    uint chunkRows = 2;
     logger.log("Matrix::blockify");
-    ifstream fin(this->sourceFileName, ios::in); // SP: Improve: fin close
-    string line, word;
-    vector<int> row(this->columnCount, 0); // SP: So basically a row is being stored in a vector, assuming its values to be integer
-    vector<vector<int>> rowsInPage(this->maxRowsPerBlock, row); // SP: This stores all such rows, which are to be written in a single block
-    int pageCounter = 0; // SP: Improve: Change name to currentRowInBlock
-    unordered_set<int> dummy;
-    dummy.clear();
-    this->distinctValuesInColumns.assign(this->columnCount, dummy);
-    this->distinctValuesPerColumnCount.assign(this->columnCount, 0);
-    getline(fin, line);
-    while (getline(fin, line)) {
-        stringstream s(line);
-        for (int columnCounter = 0; columnCounter < this->columnCount; columnCounter++) {
-            if (!getline(s, word, ','))
-                return false;
-            row[columnCounter] = stoi(word);
-            rowsInPage[pageCounter][columnCounter] = row[columnCounter];
-        }
-        pageCounter++; // SP: Counting rows?
-        this->updateStatistics(row);
-        if (pageCounter == this->maxRowsPerBlock) // SP: once row count exceeds, write in page
-        {
-            bufferManager.writePage(this->matrixName, this->blockCount, rowsInPage, pageCounter);
-            this->blockCount++;
-            this->rowsPerBlockCount.emplace_back(pageCounter); // SP: Vector storing count of rows in ith block
-            pageCounter = 0;
-        }
-    }
-    if (pageCounter) //SP: write rest of the page
-    {
-        bufferManager.writePage(this->matrixName, this->blockCount, rowsInPage, pageCounter);
-        this->blockCount++;
-        this->rowsPerBlockCount.emplace_back(pageCounter);
-        pageCounter = 0;
-    }
+                     // SP: So basically a row is being stored in a vector, assuming its values to be integer
+    // vector<vector<int>> rowsInPage(chunkRows, row); // SP: This stores all such rows, which are to be written in a single block
+    
+    this->colBlocks = (uint)ceil((1.0*this->columnCount)/chunkCols);
+    this->rowBlocks = (uint)ceil((1.0*this->rowCount)/chunkRows);
 
+    long long seekLength = 0;
+
+    ifstream fin(this->sourceFileName, ios::in);
+    for(uint colBlockIndex=0; colBlockIndex < this->colBlocks; colBlockIndex++){
+        string line, value;
+        bool seekLengthFlag = true;
+        long long currentSeek = seekLength;
+        uint rowBlockIndex = 0;
+        uint rowInBlock = 0;
+        vector<vector<int>> block;
+        while (getline(fin, line))
+        {
+            vector<int> row;
+            stringstream rowStream(line);
+            rowStream.seekg(currentSeek);
+            while(getline(rowStream, value, ',')){
+                if(seekLengthFlag) seekLength+=(value.size()+1LL);
+                row.push_back(stoi(value));
+                if(row.size() >= chunkCols) break;
+            }
+            block.push_back(row);
+            seekLengthFlag = false;
+            rowInBlock++;
+            if(rowInBlock == chunkRows){
+                bufferManager.writePage(this->matrixName, rowBlockIndex, colBlockIndex, block, rowInBlock);
+                rowInBlock = 0;
+                block.clear();
+                rowBlockIndex++;
+            }
+        }
+        if(rowInBlock){
+            bufferManager.writePage(this->matrixName, rowBlockIndex, colBlockIndex, block, rowInBlock);
+            block.clear();
+        }
+        fin.clear();
+        fin.seekg(0, ios::beg);
+    }
+    fin.close();
     if (this->rowCount == 0)
         return false;
-    this->distinctValuesInColumns.clear(); // SP: Cleared optimization thingy
     return true;
-}
-
-/**
- * @brief Given a row of values, this function will update the statistics it
- * stores i.e. it updates the number of rows that are present in the column and
- * the number of distinct values present in each column. These statistics are to
- * be used during optimisation.
- *
- * @param row 
- */
-void Matrix::updateStatistics(vector<int> row) // SP: Store count of non zero values : optional : implement
-{
-    this->rowCount++;
-    for (int columnCounter = 0; columnCounter < this->columnCount; columnCounter++) {
-        if (!this->distinctValuesInColumns[columnCounter].count(row[columnCounter])) // SP: check if a particular value(from a row) is present in column
-        {
-            this->distinctValuesInColumns[columnCounter].insert(row[columnCounter]);
-            this->distinctValuesPerColumnCount[columnCounter]++; // SP: increasing count for that particular column
-        }
-    }
 }
 
 /**
@@ -143,11 +155,12 @@ void Matrix::print() // SP: For PrintMat: atmost 20 rows : implement
     uint count = min((long long)PRINT_COUNT, this->rowCount);
 
     //print headings
-    this->writeRow(this->columns, cout);
+    // this->writeRow(this->columns, cout);
 
     Cursor cursor(this->matrixName, 0);
     vector<int> row;
-    for (int rowCounter = 0; rowCounter < count; rowCounter++) {
+    for (int rowCounter = 0; rowCounter < count; rowCounter++)
+    {
         row = cursor.getNext(); // gets a row from page on pageIndex
         this->writeRow(row, cout);
     }
@@ -161,7 +174,7 @@ void Matrix::print() // SP: For PrintMat: atmost 20 rows : implement
  * @param cursor 
  * @return vector<int> 
  */
-void Matrix::getNextPage(Cursor* cursor)
+void Matrix::getNextPage(Cursor *cursor)
 {
     logger.log("Matrix::getNext");
 
@@ -185,11 +198,12 @@ void Matrix::makePermanent() // SP: For EXPORTMAT: Implement
     ofstream fout(newSourceFile, ios::out);
 
     //print headings
-    this->writeRow(this->columns, fout);
+    // this->writeRow(this->columns, fout);
 
     Cursor cursor(this->matrixName, 0);
     vector<int> row;
-    for (int rowCounter = 0; rowCounter < this->rowCount; rowCounter++) {
+    for (int rowCounter = 0; rowCounter < this->rowCount; rowCounter++)
+    {
         row = cursor.getNext();
         this->writeRow(row, fout);
     }
@@ -218,8 +232,9 @@ bool Matrix::isPermanent()
 void Matrix::unload()
 {
     logger.log("Matrix::~unload");
-    for (int pageCounter = 0; pageCounter < this->blockCount; pageCounter++)
-        bufferManager.deleteFile(this->matrixName, pageCounter);
+    for (int pageRowBlock = 0; pageRowBlock < this->rowBlocks; pageRowBlock++)
+        for (int pageColBlock = 0; pageColBlock < this->colBlocks; pageColBlock++)
+            bufferManager.deleteFile(this->matrixName, pageRowBlock, pageColBlock);
     if (!isPermanent())
         bufferManager.deleteFile(this->sourceFileName);
 }

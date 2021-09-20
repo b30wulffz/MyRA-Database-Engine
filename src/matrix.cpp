@@ -268,7 +268,7 @@ void Matrix::print() // SP: For PrintMat: atmost 20 rows : implement
 
     Cursor cursor(this->matrixName, 0, 0);
     vector<int> row;
-    for(int rowBlockIndex = 0; rowBlockIndex < count; rowBlockIndex++){
+    for(int rowIndex = 0; rowIndex < count; rowIndex++){
         for(int colBlockIndex = 0; colBlockIndex < this->colBlocks; colBlockIndex++){
             row = cursor.getNext(); // gets a row from page on pageIndex
             this->writeRow(row, cout, colBlockIndex == this->colBlocks-1);
@@ -308,11 +308,13 @@ void Matrix::makePermanent() // SP: For EXPORTMAT: Implement
     string newSourceFile = "../data/" + this->matrixName + ".csv";
     ofstream fout(newSourceFile, ios::out);
 
-    Cursor cursor(this->matrixName, 0);
+    Cursor cursor(this->matrixName, 0, 0);
     vector<int> row;
-    for (int rowCounter = 0; rowCounter < this->rowCount; rowCounter++) {
-        row = cursor.getNext();
-        // this->writeRow(row, fout);
+    for(int rowIndex = 0; rowIndex < this->rowCount; rowIndex++){
+        for(int colBlockIndex = 0; colBlockIndex < this->colBlocks; colBlockIndex++){
+            row = cursor.getNext(); // gets a row from page on pageIndex
+            this->writeRow(row, fout, colBlockIndex == this->colBlocks-1);
+        }
     }
     fout.close();
 }

@@ -46,7 +46,7 @@ public:
  * @param row 
  */
     template <typename T>
-    void writeRow(vector<T> row, ostream& fout)
+    void writeRow(vector<T> row, ostream& fout, bool end)
     {
         logger.log("Matrix::printRow");
         for (int columnCounter = 0; columnCounter < row.size(); columnCounter++) {
@@ -54,7 +54,10 @@ public:
                 fout << ", ";
             fout << row[columnCounter];
         }
-        fout << endl;
+        if(end)
+            fout << endl;
+        else 
+            fout << ", ";
     }
 
     /**
@@ -65,11 +68,11 @@ public:
  * @param row 
  */
     template <typename T>
-    void writeRow(vector<T> row)
+    void writeRow(vector<T> row, bool end)
     {
         logger.log("Matrix::printRow");
         ofstream fout(this->sourceFileName, ios::app);
-        this->writeRow(row, fout);
+        this->writeRow(row, fout, end);
         fout.close();
     }
 };

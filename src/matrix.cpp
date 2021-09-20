@@ -197,8 +197,8 @@ void Matrix::calculateStats()
 
 bool Matrix::blockify() // SP: Load matrix in chunk 44*44 : Implement
 {
-    uint chunkCols = 44;
-    uint chunkRows = 44;
+    uint chunkCols = BLOCK_COL_COUNT;
+    uint chunkRows = BLOCK_ROW_COUNT;
     logger.log("Matrix::blockify");
 
     this->colBlocks = (uint)ceil((1.0 * this->columnCount) / chunkCols);
@@ -268,11 +268,14 @@ void Matrix::print() // SP: For PrintMat: atmost 20 rows : implement
 
     Cursor cursor(this->matrixName, 0, 0);
     vector<int> row;
-    for (int rowCounter = 0; rowCounter < count; rowCounter++) {
-        row = cursor.getNext(); // gets a row from page on pageIndex
-        this->writeRow(row, cout);
+    for(int rowBlockIndex = 0; rowBlockIndex < count; rowBlockIndex++){
+        for(int colBlockIndex = 0; colBlockIndex < this->colBlocks; colBlockIndex++){
+            row = cursor.getNext(); // gets a row from page on pageIndex
+            this->writeRow(row, cout, colBlockIndex == this->colBlocks-1);
+        }
     }
-    printRowCount(this->rowCount);
+    cout << "\nRow Count: " << count << "\nColumn Count: " << this->columnCount << endl;
+    
 }
 
 /**
@@ -309,7 +312,7 @@ void Matrix::makePermanent() // SP: For EXPORTMAT: Implement
     vector<int> row;
     for (int rowCounter = 0; rowCounter < this->rowCount; rowCounter++) {
         row = cursor.getNext();
-        this->writeRow(row, fout);
+        // this->writeRow(row, fout);
     }
     fout.close();
 }
@@ -351,6 +354,6 @@ void Matrix::unload()
 Cursor Matrix::getCursor()
 {
     logger.log("Matrix::getCursor");
-    Cursor cursor(this->matrixName, 0);
+    Cursor cursor(this->matrixName, 0, 0);
     return cursor;
 }

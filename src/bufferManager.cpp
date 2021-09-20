@@ -13,7 +13,7 @@ BufferManager::BufferManager() // SP: Deals with pages
  * @param pageIndex 
  * @return Page 
  */
-Page BufferManager::getPage(string tableName, int pageIndex)
+Page* BufferManager::getPage(string tableName, int pageIndex)
 {
     logger.log("BufferManager::getPage");
     string pageName = "../data/temp/" + tableName + "_Page" + to_string(pageIndex);
@@ -32,7 +32,7 @@ Page BufferManager::getPage(string tableName, int pageIndex)
  * @param pageColIndex 
  * @return Page 
  */
-Page BufferManager::getPage(string matrixName, int pageRowIndex, int pageColIndex)
+Page* BufferManager::getPage(string matrixName, int pageRowIndex, int pageColIndex)
 {
     logger.log("BufferManager::getPage::Matrix");
     string pageName = "../data/temp/" +  matrixName + "_Page_R" + to_string(pageRowIndex) + "_C" + to_string(pageColIndex);
@@ -53,8 +53,8 @@ Page BufferManager::getPage(string matrixName, int pageRowIndex, int pageColInde
 bool BufferManager::inPool(string pageName)
 {
     logger.log("BufferManager::inPool");
-    for (auto page : this->pages) {
-        if (pageName == page.pageName)
+    for (auto &page : this->pages) {
+        if (pageName == page->pageName)
             return true;
     }
     return false;
@@ -68,11 +68,11 @@ bool BufferManager::inPool(string pageName)
  * @param pageName 
  * @return Page 
  */
-Page BufferManager::getFromPool(string pageName)
+Page* BufferManager::getFromPool(string pageName)
 {
     logger.log("BufferManager::getFromPool");
-    for (auto page : this->pages)
-        if (pageName == page.pageName)
+    for (auto &page : this->pages)
+        if (pageName == page->pageName)
             return page;
 }
 
@@ -85,10 +85,10 @@ Page BufferManager::getFromPool(string pageName)
  * @param pageIndex 
  * @return Page 
  */
-Page BufferManager::insertIntoPool(string tableName, int pageIndex)
+Page* BufferManager::insertIntoPool(string tableName, int pageIndex)
 {
     logger.log("BufferManager::insertIntoPool");
-    Page page(tableName, pageIndex);
+    Page* page = new Page(tableName, pageIndex);
     if (this->pages.size() >= BLOCK_COUNT) // SP: maintained a DEQUE for pages, with BLOCK_COUNT to be the allowed size of pages that can be brought to main memory
         pages.pop_front();
     pages.push_back(page);
@@ -106,10 +106,10 @@ Page BufferManager::insertIntoPool(string tableName, int pageIndex)
  * @param pageColIndex 
  * @return Page 
  */
-Page BufferManager::insertIntoPool(string matrixName, int pageRowIndex, int pageColIndex)
+Page* BufferManager::insertIntoPool(string matrixName, int pageRowIndex, int pageColIndex)
 {
     logger.log("BufferManager::insertIntoPool::Matrix");
-    Page page(matrixName, pageRowIndex, pageColIndex);
+    Page* page = new Page(matrixName, pageRowIndex, pageColIndex);
     if (this->pages.size() >= BLOCK_COUNT)
         pages.pop_front();
     pages.push_back(page);
@@ -158,8 +158,8 @@ void BufferManager::writePage(string matrixName, int pageRowIndex, int pageColIn
  * @param row
  */
 void BufferManager::appendToPage(string matrixName, int pageRowIndex, int pageColIndex, vector<int> row){
-    Page page = this->getPage(matrixName, pageRowIndex, pageColIndex);
-    page.appendToPage(row);
+    Page* page = this->getPage(matrixName, pageRowIndex, pageColIndex);
+    page->appendToPage(row);
 }
 
 

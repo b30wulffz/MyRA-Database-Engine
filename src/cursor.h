@@ -7,7 +7,7 @@
  */
 class Cursor {
 public:
-    Page page; // ff: use pointer
+    Page* page; // ff: use pointer
     int pageIndex = -1;
     int pageRowIndex = -1;
     int pageColIndex = -1;

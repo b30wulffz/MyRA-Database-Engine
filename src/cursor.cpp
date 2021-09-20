@@ -30,30 +30,28 @@ Cursor::Cursor(string matrixName, int pageRowIndex, int pageColIndex)
 vector<int> Cursor::getNext() // SP: needs to be reworked as a row may or may not be present in a single page for a matrix
 {
     logger.log("Cursor::getNext");
-    if(pageIndex == -1){
-        vector<int> result;
+    if(pageIndex == -1){ // for matrix
         Matrix* matrix = matrixCatalogue.getMatrix(this->tableName);
+        uint rowIndex = this->pagePointer / matrix->colBlocks; 
+        uint colBlockIndex = this->pagePointer % matrix->colBlocks;
 
-        if(this->pagePointer >= this->page.rowCount)
-            this->pagePointer = 0;
+        uint rowBlockIndex = rowIndex / BLOCK_ROW_COUNT;
+        uint rowInBlock = rowIndex % BLOCK_ROW_COUNT;
 
-        for(int columnBlockIndex = 0; columnBlockIndex < matrix->colBlocks;){
-            vector<int> row = this->page.getRow(this->pagePointer);
-            result.insert(result.end(), row.begin(), row.end());
-            columnBlockIndex++;
-            if(columnBlockIndex < matrix->colBlocks)
-                this->nextPage(this->pagePointer, columnBlockIndex);
-        }
+        this->nextPage(rowBlockIndex, colBlockIndex);
+        vector<int> result = this->page->getRow(rowInBlock);
+        // cout << rowBlockIndex << " " << colBlockIndex << " " << result.size() << endl;
+
         this->pagePointer++;
         return result;
     }
     else{
-        vector<int> result = this->page.getRow(this->pagePointer); // SP: pagepointer means current row in a page
+        vector<int> result = this->page->getRow(this->pagePointer); // SP: pagepointer means current row in a page
         this->pagePointer++;
         if (result.empty()) { // SP: If row pointer points to a row index larger than the one stored in current page/block
             tableCatalogue.getTable(this->tableName)->getNextPage(this);
             if (!this->pagePointer) { // SP: When pagepointer > Row count in a page
-                result = this->page.getRow(this->pagePointer);
+                result = this->page->getRow(this->pagePointer);
                 this->pagePointer++;
             }
         }

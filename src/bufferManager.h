@@ -22,16 +22,16 @@
  */
 class BufferManager {
 
-    deque<Page> pages; // SP: Stores data of pages from temp folder
+    deque<Page*> pages; // SP: Stores data of pages from temp folder
     bool inPool(string pageName);
-    Page getFromPool(string pageName);
-    Page insertIntoPool(string tableName, int pageIndex);
-    Page insertIntoPool(string matrixName, int pageRowIndex, int pageColIndex);
+    Page* getFromPool(string pageName);
+    Page* insertIntoPool(string tableName, int pageIndex);
+    Page* insertIntoPool(string matrixName, int pageRowIndex, int pageColIndex);
 
 public:
     BufferManager();
-    Page getPage(string tableName, int pageIndex);
-    Page getPage(string matrixName, int pageRowIndex, int pageColIndex);
+    Page* getPage(string tableName, int pageIndex);
+    Page* getPage(string matrixName, int pageRowIndex, int pageColIndex);
     void writePage(string pageName, vector<vector<int>> rows);
     void deleteFile(string matrixName, int pageRowIndex, int pageColIndex);
     void deleteFile(string tableName, int pageIndex);

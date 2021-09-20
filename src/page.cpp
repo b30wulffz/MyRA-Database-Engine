@@ -109,6 +109,7 @@ vector<int> Page::getRow(int rowIndex)
     logger.log("Page::getRow");
     vector<int> result;
     result.clear();
+    
     if (rowIndex >= this->rows.size())
         return result;
     return this->rows[rowIndex];

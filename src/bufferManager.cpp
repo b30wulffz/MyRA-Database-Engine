@@ -88,9 +88,13 @@ Page* BufferManager::getFromPool(string pageName)
 Page* BufferManager::insertIntoPool(string tableName, int pageIndex)
 {
     logger.log("BufferManager::insertIntoPool");
-    Page* page = new Page(tableName, pageIndex);
-    if (this->pages.size() >= BLOCK_COUNT) // SP: maintained a DEQUE for pages, with BLOCK_COUNT to be the allowed size of pages that can be brought to main memory
+    if (this->pages.size() >= BLOCK_COUNT){ // SP: maintained a DEQUE for pages, with BLOCK_COUNT to be the allowed size of pages that can be brought to main memory
+        Page* front = pages.front();
         pages.pop_front();
+        // free up memory
+        delete front;
+    }
+    Page* page = new Page(tableName, pageIndex);
     pages.push_back(page);
     return page;
 }
@@ -109,9 +113,13 @@ Page* BufferManager::insertIntoPool(string tableName, int pageIndex)
 Page* BufferManager::insertIntoPool(string matrixName, int pageRowIndex, int pageColIndex)
 {
     logger.log("BufferManager::insertIntoPool::Matrix");
-    Page* page = new Page(matrixName, pageRowIndex, pageColIndex);
-    if (this->pages.size() >= BLOCK_COUNT)
+    if (this->pages.size() >= BLOCK_COUNT){
+        Page* front = pages.front();
         pages.pop_front();
+        // free up memory
+        delete front;
+    }
+    Page* page = new Page(matrixName, pageRowIndex, pageColIndex);
     pages.push_back(page);
     return page;
 }

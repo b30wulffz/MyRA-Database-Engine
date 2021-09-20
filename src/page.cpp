@@ -74,6 +74,7 @@ Page::Page(string matrixName, int pageRowIndex, int pageColIndex) // SP: Loading
     this->pageName = "../data/temp/" + this->tableName + "_Page_R" + to_string(pageRowIndex) + "_C" + to_string(pageColIndex);
     this->columnCount = 0;
     this->rowCount = 0;
+    this->rows.clear();
 
     // this->rows.assign(maxRowCount, row);
 
@@ -113,6 +114,16 @@ vector<int> Page::getRow(int rowIndex)
     if (rowIndex >= this->rows.size())
         return result;
     return this->rows[rowIndex];
+}
+
+/**
+ * @brief Returns all the rows present in page
+ * 
+ * @return vector<vector<int>> 
+ */
+vector<vector<int>> Page::getRows()
+{
+    return this->rows;
 }
 
 Page::Page(string tableName, int pageIndex, vector<vector<int>> rows, int rowCount) // SP: generating a page from data
@@ -183,4 +194,18 @@ void Page::appendToPage(vector<int> row)
         this->rowCount++;
     }
     fout.close();
+}
+
+/**
+ * @brief clears a page if it exists
+ * 
+ */
+void Page::clearPage()
+{
+    ifstream file(this->pageName);
+    if(file){
+        ofstream writeFile(this->pageName);
+        writeFile.close();
+    }
+    file.close();
 }

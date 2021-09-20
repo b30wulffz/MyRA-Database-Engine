@@ -54,10 +54,12 @@ public:
                 fout << ", ";
             fout << row[columnCounter];
         }
+        
         if(end)
             fout << endl;
-        else 
+        else
             fout << ", ";
+        
     }
 
     /**

@@ -13,19 +13,21 @@
 class Page {
 
     string tableName;
-    string pageIndex;
+    int pageIndex;
     int pageRowIndex;
     int pageColIndex;
     int columnCount;
-    int rowCount;
     vector<vector<int>> rows;
 
 public:
     string pageName = "";
+    int rowCount;
     Page();
     Page(string tableName, int pageIndex);
+    Page(string matrixName, int pageRowIndex, int pageColIndex);
     Page(string tableName, int pageIndex, vector<vector<int>> rows, int rowCount);
     Page(string matrixName, int pageRowIndex, int pageColIndex, vector<vector<int>> rows, int rowCount);
     vector<int> getRow(int rowIndex);
     void writePage();
+    void appendToPage(vector<int> row);
 };

@@ -1,11 +1,5 @@
 #include "cursor.h"
 
-// enum IndexingStrategy {
-//     BTREE,
-//     HASH,
-//     NOTHING
-// };
-
 /**
  * @brief The Matrix class holds all information related to a loaded matrix. It
  * also implements methods that interact with the parsers, executors, cursors
@@ -20,24 +14,17 @@ class Matrix {
 public:
     string sourceFileName = "";
     string matrixName = "";
-    // vector<string> columns;
     vector<uint> distinctValuesPerColumnCount;
     uint columnCount = 0;
     long long int rowCount = 0;
     uint blockCount = 0;
     uint maxRowsPerBlock = 0;
-    vector<uint> rowsPerBlockCount;
     bool isSparse = false;
     uint rowBlocks = 0;
     uint colBlocks = 0;
-    // bool indexed = false;
-    // string indexedColumn = "";
-    // IndexingStrategy indexingStrategy = NOTHING;
 
-    // bool extractColumnNames(string firstLine);
-    bool calculateStats();
+    void calculateStats();
     bool blockify();
-    void updateStatistics(vector<int> row);
     Matrix();
     Matrix(string matrixName);
     // Matrix(string matrixName, vector<string> columns);
@@ -49,7 +36,6 @@ public:
     bool isPermanent();
     void getNextPage(Cursor* cursor);
     Cursor getCursor();
-    // int getColumnIndex(string columnName);
     void unload();
 
     /**

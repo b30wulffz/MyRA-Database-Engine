@@ -7,14 +7,18 @@
  */
 class Cursor {
 public:
-    Page page;
-    int pageIndex;
+    Page page; // ff: use pointer
+    int pageIndex = -1;
+    int pageRowIndex = -1;
+    int pageColIndex = -1;
     string tableName;
     int pagePointer;
     string currentStruct; // table, matrix
 
 public:
     Cursor(string tableName, int pageIndex);
+    Cursor(string matrixName, int pageRowIndex, int pageColIndex);
     vector<int> getNext();
     void nextPage(int pageIndex);
+    void nextPage(int pageRowIndex, int pageColIndex);
 };

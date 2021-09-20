@@ -53,33 +53,85 @@ Matrix::Matrix(string matrixName)
 bool Matrix::load()
 {
     logger.log("Matrix::load");
-    return this->calculateStats() && this->blockify();
+    this->calculateStats();
+    return this->blockify();
 }
 
-bool Matrix::calculateStats()
+/**
+ * @brief The calculateStats function is used to count number of row, columns, 
+ * and total number of non zero cells.
+ * 
+ */
+// void Matrix::calculateStats()
+// {
+//     logger.log("Matrix::calculateStats");
+//     ifstream fin(this->sourceFileName, ios::in);
+//     string line, value;
+//     long long nonZeroCount = 0;
+//     bool columnCnt = true;
+//     while (getline(fin, line)) {
+//         stringstream rowStream(line);
+//         while (getline(rowStream, value, ',')) {
+//             if (stoi(value) != 0)
+//                 nonZeroCount++;
+//             if (columnCnt)
+//                 this->columnCount++;
+//         }
+//         columnCnt = false;
+//         this->rowCount++;
+//     }
+//     fin.close();
+//     long long cellsCount = this->columnCount * this->rowCount;
+//     if (nonZeroCount <= (int)(0.4 * cellsCount))
+//         this->isSparse = true;
+// }
+
+void Matrix::calculateStats()
 {
+    logger.log("Matrix::calculateStats");
     ifstream fin(this->sourceFileName, ios::in);
     string line, value;
     long long nonZeroCount = 0;
-    bool columnCnt = true;
-    while (getline(fin, line))
-    {
 
-        stringstream rowStream(line);
-        while (getline(rowStream, value, ','))
-        {
-            if (stoi(value) != 0)
-                nonZeroCount++;
-            if(columnCnt)
-                this->columnCount++;
+    // count columns
+    while (getline(fin, value, ',')) {
+        stringstream s(value);
+        string filteredValue;
+        getline(s, filteredValue, '\n');
+        this->columnCount++;
+        if(filteredValue != value) break;
+    }    
+
+    // seek to start
+    fin.clear();
+    fin.seekg(0, ios::beg);
+
+    unsigned long long int seekLength = 0;
+    uint rowCount = 0;
+    uint colCount = 0;
+
+    while (getline(fin, value, ',')) {
+        stringstream s(value);
+        string filteredValue;
+        getline(s, filteredValue, '\n');
+        seekLength += filteredValue.size() + 1;
+        int num = stoi(filteredValue);
+        if(num != 0) nonZeroCount++;
+        colCount++;
+        if(colCount == this->columnCount){
+            colCount = 0;
+            // move to next row
+            this->rowCount++;
+            // tweak for handling \n
+            fin.clear();
+            fin.seekg(seekLength, ios::beg);
         }
-        columnCnt = false;
-        this->rowCount++;
     }
     fin.close();
+    
     long long cellsCount = this->columnCount * this->rowCount;
-    if(nonZeroCount <= (int)(0.4*cellsCount)) this->isSparse = true;
-    return true;
+    if (nonZeroCount <= (int)(0.4 * cellsCount))
+        this->isSparse = true;
 }
 
 /**
@@ -89,59 +141,119 @@ bool Matrix::calculateStats()
  * @return true if successfully blockified
  * @return false otherwise
  */
+// bool Matrix::blockify_old() // SP: Load matrix in chunk 44*44 : Implement
+// {
+//     uint chunkCols = 2;
+//     uint chunkRows = 2;
+//     logger.log("Matrix::blockify");
+
+//     this->colBlocks = (uint)ceil((1.0 * this->columnCount) / chunkCols);
+//     this->rowBlocks = (uint)ceil((1.0 * this->rowCount) / chunkRows);
+
+//     long long seekLength = 0;
+
+//     ifstream fin(this->sourceFileName, ios::in);
+//     for (uint colBlockIndex = 0; colBlockIndex < this->colBlocks; colBlockIndex++) {
+//         string line, value;
+//         bool seekLengthFlag = true;
+//         long long currentSeek = seekLength;
+//         uint rowBlockIndex = 0;
+//         uint rowInBlock = 0;
+//         vector<vector<int>> block;
+//         while (getline(fin, line)) {
+//             vector<int> row;
+//             stringstream rowStream(line);
+//             rowStream.seekg(currentSeek);
+//             while (getline(rowStream, value, ',')) {
+//                 if (seekLengthFlag)
+//                     seekLength += (value.size() + 1LL);
+//                 cout << value << " ";
+//                 row.push_back(stoi(value));
+//                 if (row.size() >= chunkCols)
+//                     break;
+//             }
+//             block.push_back(row);
+//             seekLengthFlag = false;
+//             rowInBlock++;
+//             if (rowInBlock == chunkRows) {
+//                 bufferManager.writePage(this->matrixName, rowBlockIndex, colBlockIndex, block, rowInBlock);
+//                 rowInBlock = 0;
+//                 block.clear();
+//                 rowBlockIndex++;
+//             }
+//         }
+//         if (rowInBlock) {
+//             bufferManager.writePage(this->matrixName, rowBlockIndex, colBlockIndex, block, rowInBlock);
+//             block.clear();
+//         }
+//         fin.clear();
+//         fin.seekg(0, ios::beg);
+//     }
+//     fin.close();
+//     if (this->rowCount == 0)
+//         return false;
+//     return true;
+// }
+
 bool Matrix::blockify() // SP: Load matrix in chunk 44*44 : Implement
 {
-    uint chunkCols = 2;
-    uint chunkRows = 2;
+    uint chunkCols = 44;
+    uint chunkRows = 44;
     logger.log("Matrix::blockify");
-                     // SP: So basically a row is being stored in a vector, assuming its values to be integer
-    // vector<vector<int>> rowsInPage(chunkRows, row); // SP: This stores all such rows, which are to be written in a single block
-    
-    this->colBlocks = (uint)ceil((1.0*this->columnCount)/chunkCols);
-    this->rowBlocks = (uint)ceil((1.0*this->rowCount)/chunkRows);
 
-    long long seekLength = 0;
+    this->colBlocks = (uint)ceil((1.0 * this->columnCount) / chunkCols);
+    this->rowBlocks = (uint)ceil((1.0 * this->rowCount) / chunkRows);
+
+    uint rowBlockIndex = 0;
+    uint colBlockIndex = 0;
+    uint rowCount = 0;
+    uint colCount = 0;
 
     ifstream fin(this->sourceFileName, ios::in);
-    for(uint colBlockIndex=0; colBlockIndex < this->colBlocks; colBlockIndex++){
-        string line, value;
-        bool seekLengthFlag = true;
-        long long currentSeek = seekLength;
-        uint rowBlockIndex = 0;
-        uint rowInBlock = 0;
-        vector<vector<int>> block;
-        while (getline(fin, line))
-        {
-            vector<int> row;
-            stringstream rowStream(line);
-            rowStream.seekg(currentSeek);
-            while(getline(rowStream, value, ',')){
-                if(seekLengthFlag) seekLength+=(value.size()+1LL);
-                row.push_back(stoi(value));
-                if(row.size() >= chunkCols) break;
+    string value;
+
+    unsigned long long int seekLength = 0;
+    vector<int> row;
+
+    while (getline(fin, value, ',')) {
+        stringstream s(value);
+        getline(s, value, '\n');
+        seekLength += value.size() + 1;
+        int num = stoi(value);
+        row.push_back(num);
+
+        colCount++;
+        if((colCount%chunkCols) == 0){
+            // insert row in rowBlockIndex, colBlockIndex
+            bufferManager.appendToPage(this->matrixName, rowBlockIndex, colBlockIndex, row);
+            row.clear();
+            colBlockIndex++;
+        }
+        if(colCount == this->columnCount){
+            if((colCount%chunkCols) != 0){
+                // insert row in rowBlockIndex, colBlockIndex
+                bufferManager.appendToPage(this->matrixName, rowBlockIndex, colBlockIndex, row);
+                row.clear();
             }
-            block.push_back(row);
-            seekLengthFlag = false;
-            rowInBlock++;
-            if(rowInBlock == chunkRows){
-                bufferManager.writePage(this->matrixName, rowBlockIndex, colBlockIndex, block, rowInBlock);
-                rowInBlock = 0;
-                block.clear();
+            colCount = 0;
+            colBlockIndex = 0;
+            // move to next row
+            rowCount++;
+            if((rowCount%chunkRows) == 0){
                 rowBlockIndex++;
             }
+            // tweak for handling \n
+            fin.clear();
+            fin.seekg(seekLength, ios::beg);
         }
-        if(rowInBlock){
-            bufferManager.writePage(this->matrixName, rowBlockIndex, colBlockIndex, block, rowInBlock);
-            block.clear();
-        }
-        fin.clear();
-        fin.seekg(0, ios::beg);
     }
+    
     fin.close();
     if (this->rowCount == 0)
         return false;
     return true;
 }
+
 
 /**
  * @brief Function prints the first few rows of the matrix. If the matrix contains
@@ -154,13 +266,9 @@ void Matrix::print() // SP: For PrintMat: atmost 20 rows : implement
     logger.log("Matrix::print");
     uint count = min((long long)PRINT_COUNT, this->rowCount);
 
-    //print headings
-    // this->writeRow(this->columns, cout);
-
-    Cursor cursor(this->matrixName, 0);
+    Cursor cursor(this->matrixName, 0, 0);
     vector<int> row;
-    for (int rowCounter = 0; rowCounter < count; rowCounter++)
-    {
+    for (int rowCounter = 0; rowCounter < count; rowCounter++) {
         row = cursor.getNext(); // gets a row from page on pageIndex
         this->writeRow(row, cout);
     }
@@ -174,7 +282,7 @@ void Matrix::print() // SP: For PrintMat: atmost 20 rows : implement
  * @param cursor 
  * @return vector<int> 
  */
-void Matrix::getNextPage(Cursor *cursor)
+void Matrix::getNextPage(Cursor* cursor)
 {
     logger.log("Matrix::getNext");
 
@@ -197,13 +305,9 @@ void Matrix::makePermanent() // SP: For EXPORTMAT: Implement
     string newSourceFile = "../data/" + this->matrixName + ".csv";
     ofstream fout(newSourceFile, ios::out);
 
-    //print headings
-    // this->writeRow(this->columns, fout);
-
     Cursor cursor(this->matrixName, 0);
     vector<int> row;
-    for (int rowCounter = 0; rowCounter < this->rowCount; rowCounter++)
-    {
+    for (int rowCounter = 0; rowCounter < this->rowCount; rowCounter++) {
         row = cursor.getNext();
         this->writeRow(row, fout);
     }

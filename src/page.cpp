@@ -13,6 +13,7 @@ Page::Page()
     this->rowCount = 0;
     this->columnCount = 0;
     this->rows.clear();
+    // todo: maintain a row loaded bool to reduce redundant row loads
 }
 
 /**
@@ -52,6 +53,52 @@ Page::Page(string tableName, int pageIndex) // SP: Loading a page stored in temp
 }
 
 /**
+ * @brief Construct a new Page:: Page object given the matrix name, page row 
+ * index and page col index. When tables are loaded they are broken up into 
+ * blocks of 44*44 and each block is stored in a different file named
+ * "<matrixname>_Page_R<pageRowIndex>_C<pageColIndex>". For example, If the 
+ * Page being loaded is of matrix "M", the pageRowIndex is 3 and the pageColIndex 
+ * is 2 then the file name is "M_Page_R3_C2". The page loads the rows (or 
+ * tuples) into a vector of rows (where each row is a vector of integers).
+ *
+ * @param tableName 
+ * @param pageRowIndex 
+ * @param pageColIndex 
+ */
+Page::Page(string matrixName, int pageRowIndex, int pageColIndex) // SP: Loading a page stored in temp
+{
+    logger.log("Page::Page::Matrix");
+    this->tableName = matrixName;
+    this->pageRowIndex = pageRowIndex;
+    this->pageColIndex = pageColIndex;
+    this->pageName = "../data/temp/" + this->tableName + "_Page_R" + to_string(pageRowIndex) + "_C" + to_string(pageColIndex);
+    this->columnCount = 0;
+    this->rowCount = 0;
+
+    // this->rows.assign(maxRowCount, row);
+
+    ifstream fin(this->pageName, ios::in); // SP: Loading the stream from stored page
+    string line, value;
+    
+    bool colCnt = true;
+    while(getline(fin, line)){
+        stringstream rowStream(line);
+        vector<int> row;
+        while(getline(rowStream, value, ' ')){
+            row.push_back(stoi(value));
+            if(colCnt){
+                this->columnCount++;
+            }
+        }
+        colCnt = false;
+        this->rows.push_back(row);
+        this->rowCount++;
+    }
+
+    fin.close();
+}
+
+/**
  * @brief Get row from page indexed by rowIndex
  * 
  * @param rowIndex 
@@ -62,7 +109,7 @@ vector<int> Page::getRow(int rowIndex)
     logger.log("Page::getRow");
     vector<int> result;
     result.clear();
-    if (rowIndex >= this->rowCount)
+    if (rowIndex >= this->rows.size())
         return result;
     return this->rows[rowIndex];
 }
@@ -78,17 +125,16 @@ Page::Page(string tableName, int pageIndex, vector<vector<int>> rows, int rowCou
     this->pageName = "../data/temp/" + this->tableName + "_Page" + to_string(pageIndex);
 }
 
-
 Page::Page(string tableName, int pageRowIndex, int pageColIndex, vector<vector<int>> rows, int rowCount) // SP: generating a page from data
 {
-    logger.log("Page::Page");
+    logger.log("Page::Page::Matrix");
     this->tableName = tableName;
     this->pageRowIndex = pageRowIndex;
     this->pageColIndex = pageColIndex;
     this->rows = rows;
     this->rowCount = rowCount;
     this->columnCount = rows[0].size();
-    this->pageName = "../data/temp/" + this->tableName + "_Page_R" + to_string(pageRowIndex) +"_C" + to_string(pageColIndex);
+    this->pageName = "../data/temp/" + this->tableName + "_Page_R" + to_string(pageRowIndex) + "_C" + to_string(pageColIndex);
 }
 
 /**
@@ -107,6 +153,33 @@ void Page::writePage()
             fout << this->rows[rowCounter][columnCounter];
         }
         fout << endl;
+    }
+    fout.close();
+}
+
+
+/**
+ * @brief appends a row to the page.
+ * 
+ */
+void Page::appendToPage(vector<int> row)
+{
+    logger.log("Page::appendToPage");
+    ofstream fout(this->pageName, ios::app);
+    if(this->columnCount == 0){
+        this->columnCount = row.size();
+    }
+    if(this->columnCount == row.size()){
+        for(int columnCounter=0; columnCounter<row.size(); columnCounter++){
+            if(columnCounter != 0)
+                fout << " ";
+            fout << row[columnCounter];
+        }
+        if(row.size()>0)
+            fout << "\n";
+        // set it optional
+        this->rows.push_back(row);
+        this->rowCount++;
     }
     fout.close();
 }

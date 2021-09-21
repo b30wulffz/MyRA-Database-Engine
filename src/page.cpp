@@ -192,7 +192,6 @@ void Page::writePage()
 void Page::appendToPage(vector<int> row)
 {
     logger.log("Page::appendToPage");
-    this->loadRows();
     ofstream fout(this->pageName, ios::app);
     if(this->columnCount == 0){
         this->columnCount = row.size();
@@ -205,8 +204,8 @@ void Page::appendToPage(vector<int> row)
         }
         if(row.size()>0)
             fout << "\n";
-        // set it optional
-        this->rows.push_back(row);
+        if(isLoaded)
+            this->rows.push_back(row);
         this->rowCount++;
     }
     fout.close();

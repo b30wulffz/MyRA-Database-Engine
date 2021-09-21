@@ -40,7 +40,6 @@ vector<int> Cursor::getNext() // SP: needs to be reworked as a row may or may no
 
         this->nextPage(rowBlockIndex, colBlockIndex);
         vector<int> result = this->page->getRow(rowInBlock);
-        // cout << rowBlockIndex << " " << colBlockIndex << " " << result.size() << endl;
 
         this->pagePointer++;
         return result;
@@ -58,6 +57,9 @@ vector<int> Cursor::getNext() // SP: needs to be reworked as a row may or may no
         return result;
     }
 }
+
+
+
 /**
  * @brief Function that loads Page indicated by pageIndex. Now the cursor starts
  * reading from the new page.

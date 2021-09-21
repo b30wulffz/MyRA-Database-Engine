@@ -122,7 +122,7 @@ vector<int> Page::getRow(int rowIndex)
     vector<int> result;
     result.clear();
     this->loadRows();
-    if (rowIndex >= this->rows.size())
+    if (rowIndex >= this->rowCount)
         return result;
     return this->rows[rowIndex];
 }

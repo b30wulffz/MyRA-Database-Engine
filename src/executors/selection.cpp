@@ -7,7 +7,7 @@ bool syntacticParseSELECTION()
 {
     logger.log("syntacticParseSELECTION");
     if (tokenizedQuery.size() != 8 || tokenizedQuery[6] != "FROM") {
-        cout << "SYNTAC ERROR" << endl;
+        cout << "SYNTAX ERROR" << endl;
         return false;
     }
     parsedQuery.queryType = SELECTION;
@@ -29,7 +29,7 @@ bool syntacticParseSELECTION()
     else if (binaryOperator == "!=")
         parsedQuery.selectionBinaryOperator = NOT_EQUAL;
     else {
-        cout << "SYNTAC ERROR" << endl;
+        cout << "SYNTAX ERROR" << endl;
         return false;
     }
     regex numeric("[-]?[0-9]+");

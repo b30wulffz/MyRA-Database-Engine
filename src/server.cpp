@@ -6,8 +6,8 @@ using namespace std;
 float BLOCK_SIZE = 1;
 uint BLOCK_COUNT = 2;
 uint PRINT_COUNT = 20;
-uint BLOCK_ROW_COUNT = 2; // for storing matrix
-uint BLOCK_COL_COUNT = 2; // for storing matrix
+uint BLOCK_ROW_COUNT = 44; // for storing matrix
+uint BLOCK_COL_COUNT = 44; // for storing matrix
 Logger logger;
 vector<string> tokenizedQuery;
 ParsedQuery parsedQuery;

@@ -69,10 +69,10 @@ void executeTRANSPOSEMAT()
         for(int colBlockIndex = rowBlockIndex; colBlockIndex < upperLimit; colBlockIndex++){
             if(rowBlockIndex == colBlockIndex){
                 Page * pageA = bufferManager.getPage(matrix->matrixName, rowBlockIndex, colBlockIndex);
-
-                if(transpose(pageA->rows)){
-                    pageA->rowCount = pageA->rows.size();
-                    pageA->columnCount = pageA->rows[0].size();
+                vector<vector<int>> &subMatrixA = pageA->getRows();
+                if(transpose(subMatrixA)){
+                    pageA->rowCount = subMatrixA.size();
+                    pageA->columnCount = subMatrixA[0].size();
                     pageA->writePage();
                 }
                 else{
@@ -83,17 +83,20 @@ void executeTRANSPOSEMAT()
                 Page * pageA = bufferManager.getPage(matrix->matrixName, rowBlockIndex, colBlockIndex);
                 Page * pageB = bufferManager.getPage(matrix->matrixName, colBlockIndex, rowBlockIndex);
                
-                bool isA = transpose(pageA->rows);
-                bool isB = transpose(pageB->rows);
+                vector<vector<int>> &subMatrixA = pageA->getRows();
+                vector<vector<int>> &subMatrixB = pageB->getRows();
+
+                bool isA = transpose(subMatrixA);
+                bool isB = transpose(subMatrixB);
 
                 // memory efficient swap
-                vector<vector<int>> tempMatrix = move(pageA->rows);
-                pageA->rows = move(pageB->rows);
-                pageB->rows = move(tempMatrix);
+                vector<vector<int>> tempMatrix = move(subMatrixA);
+                subMatrixA = move(subMatrixB);
+                subMatrixB = move(tempMatrix);
 
-                pageA->rowCount = pageA->rows.size();
+                pageA->rowCount = subMatrixA.size();
                 if(isB){
-                    pageA->columnCount = pageA->rows[0].size();
+                    pageA->columnCount = subMatrixA[0].size();
                     pageA->writePage();
                 }
                 else{
@@ -101,9 +104,9 @@ void executeTRANSPOSEMAT()
                     pageA->clearPage();
                 }
 
-                pageB->rowCount = pageB->rows.size();
+                pageB->rowCount = subMatrixB.size();
                 if(isA){
-                    pageB->columnCount = pageB->rows[0].size();
+                    pageB->columnCount = subMatrixB[0].size();
                     pageB->writePage();
                 }
                 else{

@@ -13,6 +13,7 @@ Page::Page()
     this->rowCount = 0;
     this->columnCount = 0;
     this->rows.clear();
+    this->isLoaded = false;
     // todo: maintain a row loaded bool to reduce redundant row loads
 }
 
@@ -50,6 +51,7 @@ Page::Page(string tableName, int pageIndex) // SP: Loading a page stored in temp
         }
     }
     fin.close();
+    this->isLoaded = true;
 }
 
 /**
@@ -75,28 +77,37 @@ Page::Page(string matrixName, int pageRowIndex, int pageColIndex) // SP: Loading
     this->columnCount = 0;
     this->rowCount = 0;
     this->rows.clear();
+    this->isLoaded = false;
+}
 
-    // this->rows.assign(maxRowCount, row);
-
-    ifstream fin(this->pageName, ios::in); // SP: Loading the stream from stored page
-    string line, value;
-    
-    bool colCnt = true;
-    while(getline(fin, line)){
-        stringstream rowStream(line);
-        vector<int> row;
-        while(getline(rowStream, value, ' ')){
-            row.push_back(stoi(value));
-            if(colCnt){
-                this->columnCount++;
+/**
+ * @brief load matrix rows when needed
+ * 
+ */
+void Page::loadRows()
+{
+    if(!this->isLoaded){
+        ifstream fin(this->pageName, ios::in); // SP: Loading the stream from stored page
+        string line, value;
+        
+        bool colCnt = true;
+        while(getline(fin, line)){
+            stringstream rowStream(line);
+            vector<int> row;
+            while(getline(rowStream, value, ' ')){
+                row.push_back(stoi(value));
+                if(colCnt){
+                    this->columnCount++;
+                }
             }
+            colCnt = false;
+            this->rows.push_back(row);
+            this->rowCount++;
         }
-        colCnt = false;
-        this->rows.push_back(row);
-        this->rowCount++;
-    }
 
-    fin.close();
+        fin.close();
+        this->isLoaded = true;
+    }
 }
 
 /**
@@ -110,7 +121,7 @@ vector<int> Page::getRow(int rowIndex)
     logger.log("Page::getRow");
     vector<int> result;
     result.clear();
-    
+    this->loadRows();
     if (rowIndex >= this->rows.size())
         return result;
     return this->rows[rowIndex];
@@ -121,8 +132,9 @@ vector<int> Page::getRow(int rowIndex)
  * 
  * @return vector<vector<int>> 
  */
-vector<vector<int>> Page::getRows()
+vector<vector<int>> &Page::getRows()
 {
+    this->loadRows();
     return this->rows;
 }
 
@@ -135,6 +147,7 @@ Page::Page(string tableName, int pageIndex, vector<vector<int>> rows, int rowCou
     this->rowCount = rowCount;
     this->columnCount = rows[0].size();
     this->pageName = "../data/temp/" + this->tableName + "_Page" + to_string(pageIndex);
+    this->isLoaded = true;
 }
 
 Page::Page(string tableName, int pageRowIndex, int pageColIndex, vector<vector<int>> rows, int rowCount) // SP: generating a page from data
@@ -147,6 +160,7 @@ Page::Page(string tableName, int pageRowIndex, int pageColIndex, vector<vector<i
     this->rowCount = rowCount;
     this->columnCount = rows[0].size();
     this->pageName = "../data/temp/" + this->tableName + "_Page_R" + to_string(pageRowIndex) + "_C" + to_string(pageColIndex);
+    this->isLoaded = true;
 }
 
 /**
@@ -156,6 +170,7 @@ Page::Page(string tableName, int pageRowIndex, int pageColIndex, vector<vector<i
 void Page::writePage()
 {
     logger.log("Page::writePage");
+    this->loadRows();
     ofstream fout(this->pageName, ios::trunc);
     for (int rowCounter = 0; rowCounter < this->rowCount; rowCounter++) // SP: writing just the data in page
     {
@@ -177,6 +192,7 @@ void Page::writePage()
 void Page::appendToPage(vector<int> row)
 {
     logger.log("Page::appendToPage");
+    this->loadRows();
     ofstream fout(this->pageName, ios::app);
     if(this->columnCount == 0){
         this->columnCount = row.size();

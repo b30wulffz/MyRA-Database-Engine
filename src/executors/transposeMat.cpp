@@ -64,64 +64,82 @@ void executeTRANSPOSEMAT()
 {
     logger.log("executeTRANSPOSEMAT");
     Matrix* matrix = matrixCatalogue.getMatrix(parsedQuery.exportRelationName);
-    uint upperLimit = max(matrix->rowBlocks, matrix->colBlocks);
-    for(int rowBlockIndex = 0; rowBlockIndex < upperLimit; rowBlockIndex++){
-        for(int colBlockIndex = rowBlockIndex; colBlockIndex < upperLimit; colBlockIndex++){
-            if(rowBlockIndex == colBlockIndex){
-                Page * pageA = bufferManager.getPage(matrix->matrixName, rowBlockIndex, colBlockIndex);
-                vector<vector<int>> &subMatrixA = pageA->getRows();
-                if(transpose(subMatrixA)){
-                    pageA->rowCount = subMatrixA.size();
-                    pageA->columnCount = subMatrixA[0].size();
-                    pageA->writePage();
-                }
-                else{
-                    pageA->clearPage();
-                }
+    if(matrix->isSparse){
+        for(int pageIndex = 0; pageIndex < matrix->blockCount; pageIndex++){
+            Page * page = bufferManager.getPage(matrix->matrixName, pageIndex, true);
+            vector<vector<int>> &rows = page->getRows();
+            for(auto &r : rows){
+                int row = r[0] / matrix->columnCount;
+                int col = r[0] % matrix->columnCount;
+                r[0] = (col*matrix->rowCount) + row;
             }
-            else{
-                Page * pageA = bufferManager.getPage(matrix->matrixName, rowBlockIndex, colBlockIndex);
-                Page * pageB = bufferManager.getPage(matrix->matrixName, colBlockIndex, rowBlockIndex);
-               
-                vector<vector<int>> &subMatrixA = pageA->getRows();
-                vector<vector<int>> &subMatrixB = pageB->getRows();
-
-                bool isA = transpose(subMatrixA);
-                bool isB = transpose(subMatrixB);
-
-                // memory efficient swap
-                vector<vector<int>> tempMatrix = move(subMatrixA);
-                subMatrixA = move(subMatrixB);
-                subMatrixB = move(tempMatrix);
-
-                pageA->rowCount = subMatrixA.size();
-                if(isB){
-                    pageA->columnCount = subMatrixA[0].size();
-                    pageA->writePage();
+            sort(rows.begin(), rows.end());
+            page->writePage();
+        }
+    }
+    else{
+        uint upperLimit = max(matrix->rowBlocks, matrix->colBlocks);
+        for(int rowBlockIndex = 0; rowBlockIndex < upperLimit; rowBlockIndex++){
+            for(int colBlockIndex = rowBlockIndex; colBlockIndex < upperLimit; colBlockIndex++){
+                if(rowBlockIndex == colBlockIndex){
+                    Page * pageA = bufferManager.getPage(matrix->matrixName, rowBlockIndex, colBlockIndex, true);
+                    vector<vector<int>> &subMatrixA = pageA->getRows();
+                    if(transpose(subMatrixA)){
+                        pageA->rowCount = subMatrixA.size();
+                        pageA->columnCount = subMatrixA[0].size();
+                        pageA->writePage();
+                    }
+                    else{
+                        pageA->clearPage();
+                    }
                 }
                 else{
-                    pageA->columnCount = 0;
-                    pageA->clearPage();
-                }
+                    Page * pageA = bufferManager.getPage(matrix->matrixName, rowBlockIndex, colBlockIndex, true);
+                    Page * pageB = bufferManager.getPage(matrix->matrixName, colBlockIndex, rowBlockIndex, true);
+                
+                    vector<vector<int>> &subMatrixA = pageA->getRows();
+                    vector<vector<int>> &subMatrixB = pageB->getRows();
 
-                pageB->rowCount = subMatrixB.size();
-                if(isA){
-                    pageB->columnCount = subMatrixB[0].size();
-                    pageB->writePage();
-                }
-                else{
-                    pageB->columnCount = 0;
-                    pageB->clearPage();
+                    bool isA = transpose(subMatrixA);
+                    bool isB = transpose(subMatrixB);
+
+                    // memory efficient swap
+                    vector<vector<int>> tempMatrix = move(subMatrixA);
+                    subMatrixA = move(subMatrixB);
+                    subMatrixB = move(tempMatrix);
+
+                    pageA->rowCount = subMatrixA.size();
+                    if(isB){
+                        pageA->columnCount = subMatrixA[0].size();
+                        pageA->writePage();
+                    }
+                    else{
+                        pageA->columnCount = 0;
+                        pageA->clearPage();
+                    }
+
+                    pageB->rowCount = subMatrixB.size();
+                    if(isA){
+                        pageB->columnCount = subMatrixB[0].size();
+                        pageB->writePage();
+                    }
+                    else{
+                        pageB->columnCount = 0;
+                        pageB->clearPage();
+                    }
                 }
             }
         }
+
+        uint tmp = matrix->rowBlocks;
+        matrix->rowBlocks = matrix->colBlocks;
+        matrix->colBlocks = tmp;
     }
+
     uint tmp = matrix->rowCount;
     matrix->rowCount = matrix->columnCount;
     matrix->columnCount = tmp;
 
-    tmp = matrix->rowBlocks;
-    matrix->rowBlocks = matrix->colBlocks;
-    matrix->colBlocks = tmp;
+    matrix->isTransposed = !matrix->isTransposed;
     return;
 }

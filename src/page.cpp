@@ -14,6 +14,7 @@ Page::Page()
     this->columnCount = 0;
     this->rows.clear();
     this->isLoaded = false;
+    this->type = OTHER;
     // todo: maintain a row loaded bool to reduce redundant row loads
 }
 
@@ -52,7 +53,37 @@ Page::Page(string tableName, int pageIndex) // SP: Loading a page stored in temp
     }
     fin.close();
     this->isLoaded = true;
+    this->type = TABLE;
 }
+
+
+/**
+ * @brief Construct a new Page:: Page object given the sparse matrix name and page
+ * index. When sparse matrix is loaded they are broken up into blocks of BLOCK_SIZE
+ * and each block is stored in a different file named
+ * "<matrixname>_Page<pageindex>". For example, If the Page being loaded is of
+ * matrix "M" and the pageIndex is 2 then the file name is "M_Page2". The page
+ * loads the rows (or tuples) into a vector of rows (where each row is a vector
+ * of integers).
+ *
+ * @param matrixName 
+ * @param pageIndex 
+ * @param isSparse
+ */
+Page::Page(string matrixName, int pageIndex, bool isSparse) // SP: Loading a page stored in temp
+{
+    logger.log("Page::Page");
+    this->tableName = matrixName;
+    this->pageIndex = pageIndex;
+    this->pageName = "../data/temp/" + this->tableName + "_Page" + to_string(pageIndex);
+    Matrix* matrix = matrixCatalogue.getMatrix(this->tableName);
+    this->columnCount = 0;
+    this->rowCount = 0;
+    this->rows.clear();
+    this->isLoaded = false;
+    this->type = SPARSE_MATRIX;
+}
+
 
 /**
  * @brief Construct a new Page:: Page object given the matrix name, page row 
@@ -67,7 +98,7 @@ Page::Page(string tableName, int pageIndex) // SP: Loading a page stored in temp
  * @param pageRowIndex 
  * @param pageColIndex 
  */
-Page::Page(string matrixName, int pageRowIndex, int pageColIndex) // SP: Loading a page stored in temp
+Page::Page(string matrixName, int pageRowIndex, int pageColIndex, bool isMatrix) // SP: Loading a page stored in temp
 {
     logger.log("Page::Page::Matrix");
     this->tableName = matrixName;
@@ -78,6 +109,7 @@ Page::Page(string matrixName, int pageRowIndex, int pageColIndex) // SP: Loading
     this->rowCount = 0;
     this->rows.clear();
     this->isLoaded = false;
+    this->type = MATRIX;
 }
 
 /**
@@ -148,12 +180,26 @@ Page::Page(string tableName, int pageIndex, vector<vector<int>> rows, int rowCou
     this->columnCount = rows[0].size();
     this->pageName = "../data/temp/" + this->tableName + "_Page" + to_string(pageIndex);
     this->isLoaded = true;
+    this->type = TABLE;
 }
 
-Page::Page(string tableName, int pageRowIndex, int pageColIndex, vector<vector<int>> rows, int rowCount) // SP: generating a page from data
+Page::Page(string matrixName, int pageIndex, vector<vector<int>> rows, int rowCount, bool isSparse) // SP: generating a page from data
+{
+    logger.log("Page::Page::SparseMatrix");
+    this->tableName = matrixName;
+    this->pageIndex = pageIndex;
+    this->rows = rows;
+    this->rowCount = rowCount;
+    this->columnCount = rows[0].size();
+    this->pageName = "../data/temp/" + this->tableName + "_Page" + to_string(pageIndex);
+    this->isLoaded = true;
+    this->type = SPARSE_MATRIX;
+}
+
+Page::Page(string matrixName, int pageRowIndex, int pageColIndex, vector<vector<int>> rows, int rowCount) // SP: generating a page from data
 {
     logger.log("Page::Page::Matrix");
-    this->tableName = tableName;
+    this->tableName = matrixName;
     this->pageRowIndex = pageRowIndex;
     this->pageColIndex = pageColIndex;
     this->rows = rows;
@@ -161,6 +207,7 @@ Page::Page(string tableName, int pageRowIndex, int pageColIndex, vector<vector<i
     this->columnCount = rows[0].size();
     this->pageName = "../data/temp/" + this->tableName + "_Page_R" + to_string(pageRowIndex) + "_C" + to_string(pageColIndex);
     this->isLoaded = true;
+    this->type = MATRIX;
 }
 
 /**

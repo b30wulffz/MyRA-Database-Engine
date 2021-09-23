@@ -28,18 +28,37 @@ Page* BufferManager::getPage(string tableName, int pageIndex)
  * not present in the pool, the page is read and then inserted into the pool.
  *
  * @param matrixName 
+ * @param pageIndex 
+ * @param isSparse
+ * @return Page 
+ */
+Page* BufferManager::getPage(string matrixName, int pageIndex, bool isSparse)
+{
+    logger.log("BufferManager::getPage::SparseMatrix");
+    string pageName = "../data/temp/" + matrixName + "_Page" + to_string(pageIndex);
+    if (this->inPool(pageName))
+        return this->getFromPool(pageName);
+    else
+        return this->insertIntoPool(matrixName, pageIndex, true); // SP: Loads a page from tmp folder, stoes its data in a 2d vector, and saves entire instance in pool
+}
+
+/**
+ * @brief Function called to read a page from the buffer manager. If the page is
+ * not present in the pool, the page is read and then inserted into the pool.
+ *
+ * @param matrixName 
  * @param pageRowIndex 
  * @param pageColIndex 
  * @return Page 
  */
-Page* BufferManager::getPage(string matrixName, int pageRowIndex, int pageColIndex)
+Page* BufferManager::getPage(string matrixName, int pageRowIndex, int pageColIndex, bool isMatrix)
 {
     logger.log("BufferManager::getPage::Matrix");
     string pageName = "../data/temp/" +  matrixName + "_Page_R" + to_string(pageRowIndex) + "_C" + to_string(pageColIndex);
     if (this->inPool(pageName))
         return this->getFromPool(pageName);
     else
-        return this->insertIntoPool(matrixName, pageRowIndex, pageColIndex); // SP: Loads a page from tmp folder, stoes its data in a 2d vector, and saves entire instance in pool
+        return this->insertIntoPool(matrixName, pageRowIndex, pageColIndex, isMatrix); // SP: Loads a page from tmp folder, stoes its data in a 2d vector, and saves entire instance in pool
 }
 
 
@@ -100,6 +119,32 @@ Page* BufferManager::insertIntoPool(string tableName, int pageIndex)
 }
 
 /**
+ * @brief Inserts page indicated by matrixName, pageIndex and isSparse into pool. 
+ * If the pool is full, the pool ejects the oldest inserted page from the pool 
+ * and adds the current page at the end. It naturally follows a queue data 
+ * structure. 
+ *
+ * @param matrixName 
+ * @param pageIndex 
+ * @param isSparse
+ * @return Page 
+ */
+Page* BufferManager::insertIntoPool(string matrixName, int pageIndex, bool isSparse)
+{
+    logger.log("BufferManager::insertIntoPool::SparseMatrix");
+    if (this->pages.size() >= BLOCK_COUNT){
+        Page* front = pages.front();
+        pages.pop_front();
+        // free up memory
+        delete front;
+    }
+    Page* page = new Page(matrixName, pageIndex, isSparse);
+    pages.push_back(page);
+    return page;
+}
+
+
+/**
  * @brief Inserts page indicated by matrixName, pageRowIndex and pageColIndex 
  * into pool. If the pool is full, the pool ejects the oldest inserted page 
  * from the pool and adds the current page at the end. It naturally follows a 
@@ -110,7 +155,7 @@ Page* BufferManager::insertIntoPool(string tableName, int pageIndex)
  * @param pageColIndex 
  * @return Page 
  */
-Page* BufferManager::insertIntoPool(string matrixName, int pageRowIndex, int pageColIndex)
+Page* BufferManager::insertIntoPool(string matrixName, int pageRowIndex, int pageColIndex, bool isMatrix)
 {
     logger.log("BufferManager::insertIntoPool::Matrix");
     if (this->pages.size() >= BLOCK_COUNT){
@@ -119,7 +164,7 @@ Page* BufferManager::insertIntoPool(string matrixName, int pageRowIndex, int pag
         // free up memory
         delete front;
     }
-    Page* page = new Page(matrixName, pageRowIndex, pageColIndex);
+    Page* page = new Page(matrixName, pageRowIndex, pageColIndex, isMatrix);
     pages.push_back(page);
     return page;
 }
@@ -142,6 +187,23 @@ void BufferManager::writePage(string tableName, int pageIndex, vector<vector<int
 
 /**
  * @brief The buffer manager is also responsible for writing pages. This is
+ * called when new matrices are created using assignment statements.
+ *
+ * @param matrixName 
+ * @param pageIndex 
+ * @param rows 
+ * @param rowCount 
+ * @param isSparse
+ */
+void BufferManager::writePage(string matrixName, int pageIndex, vector<vector<int>> rows, int rowCount, bool isSparse) // SP: rowCount basically tells how many rows are to be written from 2d matrix in the page having pageIndex
+{
+    logger.log("BufferManager::writePage::SparseMatrix");
+    Page page(matrixName, pageIndex, rows, rowCount, true);
+    page.writePage();
+}
+
+/**
+ * @brief The buffer manager is also responsible for writing pages. This is
  * called when new tables are created using assignment statements.
  *
  * @param tableName 
@@ -157,6 +219,24 @@ void BufferManager::writePage(string matrixName, int pageRowIndex, int pageColIn
     page.writePage();
 }
 
+
+// /**
+//  * @brief The buffer manager is also responsible for writing pages. This is
+//  * called when new tables are created using assignment statements.
+//  *
+//  * @param tableName 
+//  * @param pageIndex 
+//  * @param rows 
+//  * @param rowCount 
+//  */
+// void BufferManager::writePage(string matrixName, int pageIndex, vector<vector<int>> rows) // SP: rowCount basically tells how many rows are to be written from 2d matrix in the page having pageIndex
+// {
+//     logger.log("BufferManager::writePage::SparseMatrix");
+//     Page page(matrixName, pageIndex, rows);
+//     page.writePage();
+// }
+
+
 /**
  * @brief This method is used to append data to a page
  *
@@ -166,7 +246,7 @@ void BufferManager::writePage(string matrixName, int pageRowIndex, int pageColIn
  * @param row
  */
 void BufferManager::appendToPage(string matrixName, int pageRowIndex, int pageColIndex, vector<int> row){
-    Page* page = this->getPage(matrixName, pageRowIndex, pageColIndex);
+    Page* page = this->getPage(matrixName, pageRowIndex, pageColIndex, true);
     page->appendToPage(row);
 }
 
@@ -188,6 +268,7 @@ void BufferManager::deleteFile(string fileName)
 /**
  * @brief Overloaded function that calls deleteFile(fileName) by constructing
  * the fileName from the tableName and pageIndex.
+ * This is used for both table and sparse matrix
  *
  * @param tableName 
  * @param pageIndex 

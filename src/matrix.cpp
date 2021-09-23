@@ -197,63 +197,196 @@ void Matrix::calculateStats()
 
 bool Matrix::blockify() // SP: Load matrix in chunk 44*44 : Implement
 {
-    uint chunkCols = BLOCK_COL_COUNT;
-    uint chunkRows = BLOCK_ROW_COUNT;
     logger.log("Matrix::blockify");
+    if(this->isSparse){
+        // 1 block can hold 1000 rows, each with 2 values
+        // this->blockCount = (uint)ceil((this->rowCount*this->columnCount) / 2000.0); 
+        this->maxRowsPerBlock = (uint)floor(SPARSE_BLOCK_SIZE / 2.0); // two elements per row
+        uint rowCount = 0;
+        uint colCount = 0;
 
-    this->colBlocks = (uint)ceil((1.0 * this->columnCount) / chunkCols);
-    this->rowBlocks = (uint)ceil((1.0 * this->rowCount) / chunkRows);
+        ifstream fin(this->sourceFileName, ios::in);
+        string value;
 
-    uint rowBlockIndex = 0;
-    uint colBlockIndex = 0;
-    uint rowCount = 0;
-    uint colCount = 0;
+        unsigned long long int seekLength = 0;
+        vector<vector<int>> rows;
+        this->blockCount = 0;
 
-    ifstream fin(this->sourceFileName, ios::in);
-    string value;
+        while (getline(fin, value, ',')) {
+            stringstream s(value);
+            getline(s, value, '\n');
+            seekLength += value.size() + 1;
+            int num = stoi(value);
+            if(num != 0){
+                int rowcol = (rowCount * this->columnCount) + colCount;
+                rows.push_back({rowcol, num});
+            }
 
-    unsigned long long int seekLength = 0;
-    vector<int> row;
-
-    while (getline(fin, value, ',')) {
-        stringstream s(value);
-        getline(s, value, '\n');
-        seekLength += value.size() + 1;
-        int num = stoi(value);
-        row.push_back(num);
-
-        colCount++;
-        if((colCount%chunkCols) == 0){
-            // insert row in rowBlockIndex, colBlockIndex
-            bufferManager.appendToPage(this->matrixName, rowBlockIndex, colBlockIndex, row);
-            row.clear();
-            colBlockIndex++;
+            colCount++;
+            if(colCount == this->columnCount){
+                colCount = 0;
+                // move to next row
+                rowCount++;
+                fin.clear();
+                fin.seekg(seekLength, ios::beg);
+            }
+            if(rows.size() == this->maxRowsPerBlock){
+                // write page
+                bufferManager.writePage(this->matrixName, this->blockCount, rows, rows.size(), true);
+                this->blockCount++;
+                rows.clear();
+            }
         }
-        if(colCount == this->columnCount){
-            if((colCount%chunkCols) != 0){
+        fin.close();
+        if(rows.size() > 0){
+            // write page
+            bufferManager.writePage(this->matrixName, this->blockCount, rows, rows.size(), true);
+            this->blockCount++;
+            rows.clear();
+        }
+    }
+    else{
+        uint chunkCols = BLOCK_COL_COUNT;
+        uint chunkRows = BLOCK_ROW_COUNT;
+
+        this->colBlocks = (uint)ceil((1.0 * this->columnCount) / chunkCols);
+        this->rowBlocks = (uint)ceil((1.0 * this->rowCount) / chunkRows);
+
+        uint rowBlockIndex = 0;
+        uint colBlockIndex = 0;
+        uint rowCount = 0;
+        uint colCount = 0;
+
+        ifstream fin(this->sourceFileName, ios::in);
+        string value;
+
+        unsigned long long int seekLength = 0;
+        vector<int> row;
+
+        while (getline(fin, value, ',')) {
+            stringstream s(value);
+            getline(s, value, '\n');
+            seekLength += value.size() + 1;
+            int num = stoi(value);
+            row.push_back(num);
+
+            colCount++;
+            if((colCount%chunkCols) == 0){
                 // insert row in rowBlockIndex, colBlockIndex
                 bufferManager.appendToPage(this->matrixName, rowBlockIndex, colBlockIndex, row);
                 row.clear();
+                colBlockIndex++;
             }
-            colCount = 0;
-            colBlockIndex = 0;
-            // move to next row
-            rowCount++;
-            if((rowCount%chunkRows) == 0){
-                rowBlockIndex++;
+            if(colCount == this->columnCount){
+                if((colCount%chunkCols) != 0){
+                    // insert row in rowBlockIndex, colBlockIndex
+                    bufferManager.appendToPage(this->matrixName, rowBlockIndex, colBlockIndex, row);
+                    row.clear();
+                }
+                colCount = 0;
+                colBlockIndex = 0;
+                // move to next row
+                rowCount++;
+                if((rowCount%chunkRows) == 0){
+                    rowBlockIndex++;
+                }
+                // tweak for handling \n
+                fin.clear();
+                fin.seekg(seekLength, ios::beg);
             }
-            // tweak for handling \n
-            fin.clear();
-            fin.seekg(seekLength, ios::beg);
         }
+        fin.close();
+        
     }
-    
-    fin.close();
     if (this->rowCount == 0)
         return false;
     return true;
 }
 
+/**
+ * @brief Function finds if an i,j value exists in any page of the sparse matrix
+ * 
+ */
+int Matrix::findValueAtIndex(int rowInd, int colInd){
+    logger.log("Matrix::findValueAtIndex");
+    int rowCol = (rowInd * this->columnCount) + colInd;
+    Cursor cursor(this->matrixName, 0, true);
+    vector<int> row;
+    
+    for(int pageIndex = 0; pageIndex < this->blockCount; pageIndex++){
+        vector<vector<int>> &rows = bufferManager.getPage(this->matrixName, pageIndex, true)->getRows();
+        int start = 0, end = rows.size()-1;
+        while(start <= end){
+            int mid = (start + end) / 2;
+            if(rows[mid][0] > rowCol)
+                end = mid-1;
+            else if(rows[mid][0] < rowCol)
+                start = mid+1;
+            else
+                return rows[mid][1];
+        }
+    }
+
+    return 0;
+}
+
+/**
+ * @brief a generic function to be used for both print to cout and export
+ * to reduce code duplication
+ * 
+ */
+void Matrix::printToSource(ostream& fout, uint rowCount)
+{
+    logger.log("Matrix::printToSource");
+
+    if(this->isSparse){
+        if(this->isTransposed){ 
+            vector<int> row;
+            for(int rowIndex = 0; rowIndex < rowCount; rowIndex++){
+                for(int colIndex = 0; colIndex < this->columnCount; colIndex++){
+                    row.push_back(this->findValueAtIndex(rowIndex, colIndex));
+                    if(colIndex == this->columnCount-1 || row.size() == SPARSE_BLOCK_SIZE) // 1000 integers can be stored in 8kB
+                    {
+                        this->writeRow(row, fout, colIndex == this->columnCount-1);
+                        row.clear();
+                    }
+                }
+            }
+        }
+        else{ // efficiency hack
+            Cursor cursor(this->matrixName, 0, true);
+            vector<int> pageRow = cursor.getNext();
+            vector<int> row;
+            for(int rowIndex = 0; rowIndex < rowCount; rowIndex++){
+                for(int colIndex = 0; colIndex < this->columnCount; colIndex++){
+                    int rowCol = (rowIndex * this->columnCount) + colIndex;
+                    if(pageRow.size() > 0 && rowCol == pageRow[0]){
+                        row.push_back(pageRow[1]);
+                        pageRow = cursor.getNext();
+                    }
+                    else{
+                        row.push_back(0);
+                    }
+                    if(colIndex == this->columnCount-1 || row.size() == SPARSE_BLOCK_SIZE) // 1000 integers can be stored in 8kB
+                    {
+                        this->writeRow(row, fout, colIndex == this->columnCount-1);
+                        row.clear();
+                    }
+                }
+            }
+        }
+    }
+    else{
+        Cursor cursor(this->matrixName, 0, 0, true);
+        vector<int> row;
+        for(int rowIndex = 0; rowIndex < rowCount; rowIndex++){
+            for(int colBlockIndex = 0; colBlockIndex < this->colBlocks; colBlockIndex++){
+                row = cursor.getNext(); // gets a row from page on pageIndex
+                this->writeRow(row, fout, colBlockIndex == this->colBlocks-1);
+            }
+        }
+    }
+}
 
 /**
  * @brief Function prints the first few rows of the matrix. If the matrix contains
@@ -261,26 +394,20 @@ bool Matrix::blockify() // SP: Load matrix in chunk 44*44 : Implement
  * the rows are printed.
  *
  */
-void Matrix::print() // SP: For PrintMat: atmost 20 rows : implement
+void Matrix::print() 
 {
     logger.log("Matrix::print");
     uint count = min((long long)PRINT_COUNT, this->rowCount);
-
-    Cursor cursor(this->matrixName, 0, 0);
-    vector<int> row;
-    for(int rowIndex = 0; rowIndex < count; rowIndex++){
-        for(int colBlockIndex = 0; colBlockIndex < this->colBlocks; colBlockIndex++){
-            row = cursor.getNext(); // gets a row from page on pageIndex
-            this->writeRow(row, cout, colBlockIndex == this->colBlocks-1);
-        }
-    }
-    cout << "\nRow Count: " << count << "\nColumn Count: " << this->columnCount << endl;
     
+    this->printToSource(cout, count);
+
+    cout << "\nRow Count: " << count << "\nColumn Count: " << this->columnCount << endl;
 }
 
 /**
  * @brief This function returns one row of the matrix using the cursor object. It
  * returns an empty row is all rows have been read.
+ * It is used for sparse matrix
  *
  * @param cursor 
  * @return vector<int> 
@@ -289,9 +416,9 @@ void Matrix::getNextPage(Cursor* cursor)
 {
     logger.log("Matrix::getNext");
 
-    if (cursor->pageIndex < this->blockCount - 1) // SP: If pages have pageindex under the limit
+    if (cursor->pageIndex < this->blockCount - 1) 
     {
-        cursor->nextPage(cursor->pageIndex + 1);
+        cursor->nextPage(cursor->pageIndex + 1, true);
     }
 }
 
@@ -308,14 +435,8 @@ void Matrix::makePermanent() // SP: For EXPORTMAT: Implement
     string newSourceFile = "../data/" + this->matrixName + ".csv";
     ofstream fout(newSourceFile, ios::out);
 
-    Cursor cursor(this->matrixName, 0, 0);
-    vector<int> row;
-    for(int rowIndex = 0; rowIndex < this->rowCount; rowIndex++){
-        for(int colBlockIndex = 0; colBlockIndex < this->colBlocks; colBlockIndex++){
-            row = cursor.getNext(); // gets a row from page on pageIndex
-            this->writeRow(row, fout, colBlockIndex == this->colBlocks-1);
-        }
-    }
+    this->printToSource(fout, this->rowCount);
+
     fout.close();
 }
 
@@ -341,9 +462,15 @@ bool Matrix::isPermanent()
 void Matrix::unload()
 {
     logger.log("Matrix::~unload");
-    for (int pageRowBlock = 0; pageRowBlock < this->rowBlocks; pageRowBlock++)
-        for (int pageColBlock = 0; pageColBlock < this->colBlocks; pageColBlock++)
-            bufferManager.deleteFile(this->matrixName, pageRowBlock, pageColBlock);
+    if (this->isSparse){
+        for(int pageBlock = 0; pageBlock < this->blockCount; pageBlock++)
+            bufferManager.deleteFile(this->matrixName, pageBlock);
+    }
+    else{
+        for (int pageRowBlock = 0; pageRowBlock < this->rowBlocks; pageRowBlock++)
+            for (int pageColBlock = 0; pageColBlock < this->colBlocks; pageColBlock++)
+                bufferManager.deleteFile(this->matrixName, pageRowBlock, pageColBlock);
+    }
     if (!isPermanent())
         bufferManager.deleteFile(this->sourceFileName);
 }
@@ -356,6 +483,12 @@ void Matrix::unload()
 Cursor Matrix::getCursor()
 {
     logger.log("Matrix::getCursor");
-    Cursor cursor(this->matrixName, 0, 0);
-    return cursor;
+    if(this->isSparse){
+        Cursor cursor(this->matrixName, 0, true);
+        return cursor;
+    }
+    else{
+        Cursor cursor(this->matrixName, 0, 0, true);
+        return cursor;
+    }
 }

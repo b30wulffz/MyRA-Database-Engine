@@ -17,8 +17,11 @@ public:
 
 public:
     Cursor(string tableName, int pageIndex);
-    Cursor(string matrixName, int pageRowIndex, int pageColIndex);
+    Cursor(string matrixName, int pageIndex, bool isSparse);
+    Cursor(string matrixName, int pageRowIndex, int pageColIndex, bool isMatrix);
     vector<int> getNext();
     void nextPage(int pageIndex);
-    void nextPage(int pageRowIndex, int pageColIndex);
+    void nextPage(int pageIndex, bool isSparse);
+    void nextPage(int pageRowIndex, int pageColIndex, bool isMatrix);
+    int getPageIndex();
 };

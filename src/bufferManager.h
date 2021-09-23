@@ -26,17 +26,21 @@ class BufferManager {
     bool inPool(string pageName);
     Page* getFromPool(string pageName);
     Page* insertIntoPool(string tableName, int pageIndex);
-    Page* insertIntoPool(string matrixName, int pageRowIndex, int pageColIndex);
+    Page* insertIntoPool(string matrixName, int pageIndex, bool isSparse);
+    Page* insertIntoPool(string matrixName, int pageRowIndex, int pageColIndex, bool isMatrix);
 
 public:
     BufferManager();
     Page* getPage(string tableName, int pageIndex);
-    Page* getPage(string matrixName, int pageRowIndex, int pageColIndex);
+    Page* getPage(string matrixName, int pageIndex, bool isSparse);
+    Page* getPage(string matrixName, int pageRowIndex, int pageColIndex, bool isMatrix);
     void writePage(string pageName, vector<vector<int>> rows);
+    void writePage(string tableName, int pageIndex, vector<vector<int>> rows, int rowCount);
+    void writePage(string matrixName, int pageIndex, vector<vector<int>> rows, int rowCount, bool isSparse);
+    void writePage(string matrixName, int pageRowIndex, int pageColIndex, vector<vector<int>> rows, int rowCount);
     void deleteFile(string matrixName, int pageRowIndex, int pageColIndex);
     void deleteFile(string tableName, int pageIndex);
     void deleteFile(string fileName);
-    void writePage(string tableName, int pageIndex, vector<vector<int>> rows, int rowCount);
-    void writePage(string matrixName, int pageRowIndex, int pageColIndex, vector<vector<int>> rows, int rowCount);
+    // void BufferManager::writePage(string matrixName, int pageIndex, vector<vector<int>> rows)
     void appendToPage(string matrixName, int pageRowIndex, int pageColIndex, vector<int> row);
 };

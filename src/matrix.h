@@ -9,7 +9,7 @@
  *
  */
 class Matrix {
-    // vector<unordered_set<int>> distinctValuesInColumns;
+    int findValueAtIndex(int row, int col);
 
 public:
     string sourceFileName = "";
@@ -22,15 +22,14 @@ public:
     bool isSparse = false;
     uint rowBlocks = 0;
     uint colBlocks = 0;
+    bool isTransposed = false;
 
     void calculateStats();
     bool blockify();
     Matrix();
     Matrix(string matrixName);
-    // Matrix(string matrixName, vector<string> columns);
     bool load();
-    // bool isColumn(string columnName);
-    // void renameColumn(string fromColumnName, string toColumnName);
+    void printToSource(ostream& fout, uint rowCount);
     void print();
     void makePermanent();
     bool isPermanent();

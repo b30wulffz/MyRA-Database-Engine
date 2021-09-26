@@ -1,5 +1,7 @@
 # Matrix
 
+> Kindly refer to the PDF version of the same for rendering the equations.
+
 ## Page Layout
 
 ### Dense Matrix
@@ -10,9 +12,11 @@
 ![](dense.png)
 
 
+<div style="page-break-after: always;"></div>
+
 ### Sparse Matrix
 - Elements are stored in a page in  **row-major order**  as a *tuple* $(hashed\ index, value)$ where $hashed\ index = i \times matrix\ row\ length + j$ for value at position $(i, j)$ in the given matrix.
-- The matrix is divied into $n$ pages of size $800$.
+- The matrix is divided into pages of size $800$.
 
 
 ![](sparse.png)
@@ -22,7 +26,7 @@
 
 ## Compression Ratio for Sparse Matrices
 
-Consider a *2-D **sparse** matrix* of **dimensions** $(n, m)$  with density $d$, where *density*: percentage of matrix containing $0$s.
+Consider a *2-D **sparse** matrix* of **dimensions** $(n, m)$  with density $d$, where *density*: percentage of matrix containing non-zero values.
 
 > We were given that the *page-size* and the *block-size* for **Phase 0** are equal to $8092 B = 8KB$. 
 
@@ -42,7 +46,7 @@ Consider a *2-D **sparse** matrix* of **dimensions** $(n, m)$  with density $d$,
 
 $$\begin{align} 
 	\textit{Compression Ratio } &= {\frac b a}\\ &= {\frac {\left \lceil{\frac {n \times m} {1600}}\right \rceil} {\left \lceil{\frac {d \times n \times m} {800}}\right \rceil }} \\ 
-	&\approx {\frac 1 d} \quad \quad \left(\textit{when }m\times n >> 0\right)
+	&\approx {\frac 1 {2\times d}} \quad \quad \left(\textit{when }m\times n >> 0\right)
 \end{align}$$
 
 ---
@@ -62,7 +66,7 @@ $$\begin{align}
 	- **Pad** *sub-matrices* in the pages with $0$s (in required dimension) to the square matrix.
 	- **In-place transpose** the *sub-matrices* in buffer.
 	- **Shrink** the matrices according to the dimensions of transpose of matrices. 
-	- **Update** the page corresponding to disk-block $(i, j)$ in $(j, i)$ and vice-versa.
+	- **Write** the *transposed matrix* correspoding to *page* $(i, j)$ in *disk-block* $(j, i)$ and vice-versa.  
 
 ---
 
@@ -71,6 +75,6 @@ $$\begin{align}
 - For every **page** corresponding to the matrix,
 	- **Load page** into the buffer.
 	-  For each *element* i.e. the tuple $(hashed\ index, value)$ ,
-		-  **Extract** the $(i, j)$ **index** from *hashed index*, where $i = \textit{hashed index} / n$ and $j = \textit{hashed index} \mod n$.
+		-  **Extract** the $(i, j)$ **index** from *hashed index*, where $i = \textit{hashed index}/\textit{matrix row-size}$ and $j = \textit{hashed index}\mod\textit{matrix row-size}$.
 		-  **Replace** it with ***hashed index*** of $(j, i)$ i.e. $\textit{new hashed index}  = j * \textit{matrix column size} + i$.
 	- **Update disk block** corresponding to the page.

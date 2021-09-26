@@ -20,7 +20,7 @@ Page* BufferManager::getPage(string tableName, int pageIndex)
     if (this->inPool(pageName))
         return this->getFromPool(pageName);
     else
-        return this->insertIntoPool(tableName, pageIndex); // SP: Loads a page from tmp folder, stoes its data in a 2d vector, and saves entire instance in pool
+        return this->insertIntoPool(tableName, pageIndex); // SP: Loads a page from tmp folder, stores its data in a 2d vector, and saves entire instance in pool
 }
 
 /**
@@ -39,7 +39,7 @@ Page* BufferManager::getPage(string matrixName, int pageIndex, bool isSparse)
     if (this->inPool(pageName))
         return this->getFromPool(pageName);
     else
-        return this->insertIntoPool(matrixName, pageIndex, true); // SP: Loads a page from tmp folder, stoes its data in a 2d vector, and saves entire instance in pool
+        return this->insertIntoPool(matrixName, pageIndex, true); // SP: Loads a page from tmp folder, stores its data in a 2d vector, and saves entire instance in pool
 }
 
 /**
@@ -49,6 +49,7 @@ Page* BufferManager::getPage(string matrixName, int pageIndex, bool isSparse)
  * @param matrixName 
  * @param pageRowIndex 
  * @param pageColIndex 
+ * @param isMatrix
  * @return Page 
  */
 Page* BufferManager::getPage(string matrixName, int pageRowIndex, int pageColIndex, bool isMatrix)
@@ -58,7 +59,7 @@ Page* BufferManager::getPage(string matrixName, int pageRowIndex, int pageColInd
     if (this->inPool(pageName))
         return this->getFromPool(pageName);
     else
-        return this->insertIntoPool(matrixName, pageRowIndex, pageColIndex, isMatrix); // SP: Loads a page from tmp folder, stoes its data in a 2d vector, and saves entire instance in pool
+        return this->insertIntoPool(matrixName, pageRowIndex, pageColIndex, isMatrix); // SP: Loads a page from tmp folder, stores its data in a 2d vector, and saves entire instance in pool
 }
 
 
@@ -153,6 +154,7 @@ Page* BufferManager::insertIntoPool(string matrixName, int pageIndex, bool isSpa
  * @param matrixName 
  * @param pageRowIndex 
  * @param pageColIndex 
+ * @param isMatrix 
  * @return Page 
  */
 Page* BufferManager::insertIntoPool(string matrixName, int pageRowIndex, int pageColIndex, bool isMatrix)

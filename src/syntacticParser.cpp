@@ -90,10 +90,12 @@ void ParsedQuery::clear()
 
     this->joinBinaryOperator = NO_BINOP_CLAUSE;
     this->joinResultRelationName = "";
+    this->joinAlgorithm = NO_JOIN_CLAUSE;
     this->joinFirstRelationName = "";
     this->joinSecondRelationName = "";
     this->joinFirstColumnName = "";
     this->joinSecondColumnName = "";
+    this->joinBufferSize = 3;
 
     this->loadRelationName = "";
 

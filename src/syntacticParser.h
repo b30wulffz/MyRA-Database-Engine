@@ -47,6 +47,12 @@ enum SelectType {
     NO_SELECT_CLAUSE
 };
 
+enum JoinAlgorithm {
+    NESTED,
+    PARTHASH,
+    NO_JOIN_CLAUSE
+};
+
 class ParsedQuery {
 
 public:
@@ -69,10 +75,12 @@ public:
 
     BinaryOperator joinBinaryOperator = NO_BINOP_CLAUSE;
     string joinResultRelationName = "";
+    JoinAlgorithm joinAlgorithm = NO_JOIN_CLAUSE;
     string joinFirstRelationName = "";
     string joinSecondRelationName = "";
     string joinFirstColumnName = "";
     string joinSecondColumnName = "";
+    int joinBufferSize = 3;
 
     string loadRelationName = "";
 

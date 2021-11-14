@@ -92,6 +92,14 @@ bool Table::extractColumnNames(string firstLine) // SP: No need to call this for
     return true;
 }
 
+void Table::initStatistics()
+{
+    unordered_set<int> dummy;
+    dummy.clear();
+    this->distinctValuesInColumns.assign(this->columnCount, dummy);
+    this->distinctValuesPerColumnCount.assign(this->columnCount, 0);
+}
+
 /**
  * @brief This function splits all the rows and stores them in multiple files of
  * one block size. 

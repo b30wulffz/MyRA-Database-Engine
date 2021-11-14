@@ -34,6 +34,7 @@ public:
 
     bool extractColumnNames(string firstLine);
     bool blockify();
+    void initStatistics();
     void updateStatistics(vector<int> row);
     Table();
     Table(string tableName);

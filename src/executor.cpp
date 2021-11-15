@@ -58,6 +58,9 @@ void executeCommand()
     case TRANSPOSEMAT:
         executeTRANSPOSEMAT();
         break;
+    case GROUPBY:
+        executeGROUPBY();
+        break;
     default:
         cout << "PARSING ERROR" << endl;
     }

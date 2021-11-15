@@ -20,3 +20,4 @@ bool semanticParseLOADMAT();
 bool semanticParsePRINTMAT();
 bool semanticParseEXPORTMAT();
 bool semanticParseTRANSPOSEMAT();
+bool semanticParseGROUPBY();

@@ -148,7 +148,7 @@ bool Table::blockify()
 
     if (this->rowCount == 0)
         return false;
-    this->distinctValuesInColumns.clear(); // SP: Cleared optimization thingy
+    // this->distinctValuesInColumns.clear(); // SP: Cleared optimization thingy
     return true;
 }
 

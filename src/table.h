@@ -16,9 +16,8 @@ enum IndexingStrategy {
  *
  */
 class Table {
-    vector<unordered_set<int>> distinctValuesInColumns;
-
 public:
+    vector<unordered_set<int>> distinctValuesInColumns;
     string sourceFileName = "";
     string tableName = "";
     vector<string> columns;

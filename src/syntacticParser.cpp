@@ -55,6 +55,8 @@ bool syntacticParse()
                 return syntacticParseDISTINCT();
             else if (possibleQueryType == "SORT")
                 return syntacticParseSORT();
+            else if (possibleQueryType == "GROUP")
+                return syntacticParseGROUPBY();
             else {
                 cout << "SYNTAX ERROR" << endl;
                 return false;

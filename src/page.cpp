@@ -54,6 +54,7 @@ Page::Page(string tableName, int pageIndex) // SP: Loading a page stored in temp
     fin.close();
     this->isLoaded = true;
     this->type = TABLE;
+    BLOCK_ACCESSES++; // Block accesses for join
 }
 
 
@@ -181,6 +182,7 @@ Page::Page(string tableName, int pageIndex, vector<vector<int>> rows, int rowCou
     this->pageName = "../data/temp/" + this->tableName + "_Page" + to_string(pageIndex);
     this->isLoaded = true;
     this->type = TABLE;
+    BLOCK_ACCESSES++; // Block accesses for join
 }
 
 Page::Page(string matrixName, int pageIndex, vector<vector<int>> rows, int rowCount, bool isSparse) // SP: generating a page from data

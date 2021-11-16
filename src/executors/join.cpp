@@ -104,6 +104,8 @@ void executeJOIN()
 {
     logger.log("executeJOIN");
 
+    BLOCK_ACCESSES = 0;
+
     Table* tableA = tableCatalogue.getTable(parsedQuery.joinFirstRelationName);
     Table* tableB = tableCatalogue.getTable(parsedQuery.joinSecondRelationName);
     
@@ -206,6 +208,7 @@ void executeJOIN()
     }
 
     tableCatalogue.insertTable(resultTable);
+    cout << "Block Accesses: " << BLOCK_ACCESSES << endl;
     cout << "Generated Table "<< resultTable->tableName << ". Column Count: " << resultTable->columnCount << " Row Count: " << resultTable->rowCount << endl;
     return;
 }

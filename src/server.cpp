@@ -9,6 +9,7 @@ uint PRINT_COUNT = 20;
 uint BLOCK_ROW_COUNT = 40; // for storing matrix
 uint BLOCK_COL_COUNT = 40; // for storing matrix
 uint SPARSE_BLOCK_SIZE = 1600; // 1600 bytes: for storing sparse matrix
+uint BLOCK_ACCESSES = 0; // for getting block accesses during join
 Logger logger;
 vector<string> tokenizedQuery;
 ParsedQuery parsedQuery;

@@ -36,24 +36,38 @@ Page::Page(string tableName, int pageIndex) // SP: Loading a page stored in temp
     this->tableName = tableName;
     this->pageIndex = pageIndex;
     this->pageName = "../data/temp/" + this->tableName + "_Page" + to_string(pageIndex);
-    Table table = *tableCatalogue.getTable(tableName);
-    this->columnCount = table.columnCount;
-    uint maxRowCount = table.maxRowsPerBlock;
-    vector<int> row(columnCount, 0);
-    this->rows.assign(maxRowCount, row);
+
+    if(tableCatalogue.isTable(tableName)){
+        Table table = *tableCatalogue.getTable(tableName);
+        this->rowCount = table.rowsPerBlockCount[pageIndex];
+        this->columnCount = table.columnCount;
+
+        uint maxRowCount = table.maxRowsPerBlock;
+        vector<int> row(columnCount, 0);
+        this->rows.assign(maxRowCount, row);
+        
+        this->type = TABLE;
+    }
+    else{
+        this->rowCount = TMP_ROW_COUNT;
+        this->columnCount = TMP_COL_COUNT;
+
+        vector<int> row(columnCount, 0);
+        this->rows.assign(TMP_MAX_ROWS_PER_BLOCK, row);
+
+        this->type = OTHER;
+    }
 
     ifstream fin(pageName, ios::in); // SP: Loading the stream from stored page
-    this->rowCount = table.rowsPerBlockCount[pageIndex];
     int number;
     for (uint rowCounter = 0; rowCounter < this->rowCount; rowCounter++) {
-        for (int columnCounter = 0; columnCounter < columnCount; columnCounter++) {
+        for (int columnCounter = 0; columnCounter < this->columnCount; columnCounter++) {
             fin >> number;
             this->rows[rowCounter][columnCounter] = number; // SP: Copying the data in a vector from a page
         }
     }
     fin.close();
     this->isLoaded = true;
-    this->type = TABLE;
     BLOCK_ACCESSES++; // Block accesses for join
 }
 

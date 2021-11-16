@@ -12,12 +12,7 @@ bool syntacticParseJOIN()
     }
     parsedQuery.queryType = JOIN;
     parsedQuery.joinResultRelationName = tokenizedQuery[0];
-    if (tokenizedQuery[4] == "NESTED"){
-        parsedQuery.joinAlgorithm = NESTED;
-    }
-    else if (tokenizedQuery[4] == "PARTHASH"){
-        parsedQuery.joinAlgorithm = PARTHASH;
-    }
+    
     parsedQuery.joinFirstRelationName = tokenizedQuery[5];
     parsedQuery.joinSecondRelationName = tokenizedQuery[6];
     parsedQuery.joinFirstColumnName = tokenizedQuery[8];
@@ -25,6 +20,18 @@ bool syntacticParseJOIN()
     parsedQuery.joinBufferSize = stoi(tokenizedQuery[12]);
 
     string binaryOperator = tokenizedQuery[9];
+
+    if (tokenizedQuery[4] == "NESTED"){
+        parsedQuery.joinAlgorithm = NESTED;
+    }
+    else if (tokenizedQuery[4] == "PARTHASH"){
+        parsedQuery.joinAlgorithm = PARTHASH;
+        if(binaryOperator != "=="){
+            cout << "SYNTAX ERROR" << endl;
+            return false;
+        }
+    }
+
     if (binaryOperator == "<")
         parsedQuery.joinBinaryOperator = LESS_THAN;
     else if (binaryOperator == ">")
@@ -112,6 +119,7 @@ void executeJOIN()
     bool flipped = false;
     if(tableB->blockCount > tableA->blockCount){
         swap(tableA, tableB);
+        swap(parsedQuery.joinFirstColumnName, parsedQuery.joinSecondColumnName);
         flipped = true;
     }
 
@@ -128,12 +136,12 @@ void executeJOIN()
 
     Table* resultTable = new Table(parsedQuery.joinResultRelationName, columns);
     resultTable->initStatistics();
+    vector<vector<int>> rowsInResultPage;
+    int blockRowCounter = 0;
 
     // execute join algorithm here using nested loop join
     if (parsedQuery.joinAlgorithm == NESTED){
         vector<Page> blocksA(parsedQuery.joinBufferSize-2);
-        vector<vector<int>> rowsInResultPage;
-        int blockRowCounter = 0;
 
         // for A
         for(int blockId=0; blockId<tableA->blockCount; blockId+=(parsedQuery.joinBufferSize-2)){
@@ -190,21 +198,129 @@ void executeJOIN()
             }
             blocksA.clear();
         }
-        if(blockRowCounter > 0){
-            bufferManager.writePage(resultTable->tableName, resultTable->blockCount, rowsInResultPage, blockRowCounter);
-            resultTable->blockCount++;
-            resultTable->rowsPerBlockCount.emplace_back(blockRowCounter);
-            blockRowCounter = 0;
-            rowsInResultPage.clear();
-        }
-
     }
     else if (parsedQuery.joinAlgorithm == PARTHASH){
+        // partition large table
+        int partitionSize = parsedQuery.joinBufferSize - 1;
+        vector<vector<vector<int>>> partitionedTableA(partitionSize+1);
+        vector<int> partitionBlockCountA(partitionSize+1, 0); // number of blocks in each partition
+        vector<int> blockRowCounterA(partitionSize+1, 0); // number of rows in a block
+        vector<vector<int>> rowsPerBlockA(partitionSize+1); // number of rows in each block, for each partition
+        set<int> validPartitionIdsA; // valid partition ids for table A
 
+        int maxRowsPerBlock = tableA->maxRowsPerBlock;
+
+        // tableName_attribute_partitionId_blockId
+        for(int blockId=0; blockId<tableA->blockCount; blockId++){
+            // int partitionId = blockId % partitionSize;
+            Page cachedBlock = *bufferManager.getPage(tableA->tableName, blockId);
+            vector<vector<int>> rows = cachedBlock.getRows();
+            for(int i=0; i<cachedBlock.rowCount; i++){
+                int partitionId = rows[i][tableAColumnIndex] % partitionSize;
+                validPartitionIdsA.insert(partitionId);
+                partitionedTableA[partitionId].push_back(rows[i]);
+                blockRowCounterA[partitionId]++;
+                if(blockRowCounterA[partitionId] == maxRowsPerBlock){
+                    string partitionBlockName = tableA->tableName + "_" + parsedQuery.joinFirstColumnName + "_" + to_string(partitionId);
+                    bufferManager.writePage(partitionBlockName, partitionBlockCountA[partitionId], partitionedTableA[partitionId], blockRowCounterA[partitionId]);
+                    partitionBlockCountA[partitionId]++;
+                    rowsPerBlockA[partitionId].push_back(blockRowCounterA[partitionId]);
+                    blockRowCounterA[partitionId] = 0;
+                    partitionedTableA[partitionId].clear();
+                }
+            }
+        }
+        
+        // check if any partition has at least one block
+        for(auto partitionId : validPartitionIdsA){
+            if(blockRowCounterA[partitionId] > 0){
+                string partitionBlockName = tableA->tableName + "_" + parsedQuery.joinFirstColumnName + "_" + to_string(partitionId);
+                bufferManager.writePage(partitionBlockName, partitionBlockCountA[partitionId], partitionedTableA[partitionId], blockRowCounterA[partitionId]);
+                partitionBlockCountA[partitionId]++;
+                rowsPerBlockA[partitionId].push_back(blockRowCounterA[partitionId]);
+                blockRowCounterA[partitionId] = 0;
+                partitionedTableA[partitionId].clear();
+            }
+        }
+        // unload table A partitions from memory
+        partitionedTableA.clear();
+
+        // hash small table in main memory
+        unordered_map<int, vector<vector<int>>> partitionedTableB;
+        for(int blockId=0; blockId<tableB->blockCount; blockId++){
+            Page cachedBlock = *bufferManager.getPage(tableB->tableName, blockId);
+            vector<vector<int>> rows = cachedBlock.getRows();
+            for(int i=0; i<cachedBlock.rowCount; i++){
+                int partitionId = rows[i][tableBColumnIndex] % partitionSize;
+                partitionedTableB[partitionId].push_back(rows[i]);
+            }
+        }
+
+        // join partitions
+        for(auto partitionIdA : validPartitionIdsA){
+            // load partition blocks from disk
+            for(int blockIdA = 0; blockIdA < partitionBlockCountA[partitionIdA]; blockIdA++){
+                string partitionBlockName = tableA->tableName + "_" + parsedQuery.joinFirstColumnName + "_" + to_string(partitionIdA);
+                TMP_ROW_COUNT = rowsPerBlockA[partitionIdA][blockIdA];
+                TMP_COL_COUNT = tableA->columns.size();
+                TMP_MAX_ROWS_PER_BLOCK = tableA->maxRowsPerBlock;
+                Page cachedBlock = *bufferManager.getPage(partitionBlockName, blockIdA);
+                vector<vector<int>> rowsA = cachedBlock.getRows();
+                for(int rowIdA=0; rowIdA<rowsPerBlockA[partitionIdA][blockIdA]; rowIdA++){
+                    int partitionIdB = rowsA[rowIdA][tableAColumnIndex] % partitionSize;
+                    vector<vector<int>>& rowsB = partitionedTableB[partitionIdB];
+                    
+                    for(int rowIdB=0; rowIdB<rowsB.size(); rowIdB++){
+                        if(rowsA[rowIdA][tableAColumnIndex] == rowsB[rowIdB][tableBColumnIndex]){
+                            vector<int> row;
+                            row.clear();
+                            if(!flipped){
+                                for(int l=0; l<tableA->columns.size(); l++){
+                                    row.push_back(rowsA[rowIdA][l]);
+                                }
+                                for(int l=0; l<tableB->columns.size(); l++){
+                                    row.push_back(rowsB[rowIdB][l]);
+                                }
+                            }
+                            else {
+                                for(int l=0; l<tableB->columns.size(); l++){
+                                    row.push_back(rowsB[rowIdB][l]);
+                                }
+                                for(int l=0; l<tableA->columns.size(); l++){
+                                    row.push_back(rowsA[rowIdA][l]);
+                                }
+                            }
+                            rowsInResultPage.push_back(row);
+                            blockRowCounter++;
+                            resultTable->updateStatistics(row);
+                            if(blockRowCounter == resultTable->maxRowsPerBlock){
+                                bufferManager.writePage(resultTable->tableName, resultTable->blockCount, rowsInResultPage, blockRowCounter);
+                                resultTable->blockCount++;
+                                resultTable->rowsPerBlockCount.emplace_back(blockRowCounter);
+                                blockRowCounter = 0;
+                                rowsInResultPage.clear();
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        TMP_ROW_COUNT = 0;
+        TMP_COL_COUNT = 0;
+        TMP_MAX_ROWS_PER_BLOCK = 0;
     }
     else{
         cout << "SEMANTIC ERROR: No such algorithm exists" << endl;
         return;
+    }
+
+
+    if(blockRowCounter > 0){
+        bufferManager.writePage(resultTable->tableName, resultTable->blockCount, rowsInResultPage, blockRowCounter);
+        resultTable->blockCount++;
+        resultTable->rowsPerBlockCount.emplace_back(blockRowCounter);
+        blockRowCounter = 0;
+        rowsInResultPage.clear();
     }
 
     tableCatalogue.insertTable(resultTable);

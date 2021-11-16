@@ -22,7 +22,8 @@ enum QueryType {
     LOADMAT,
     PRINTMAT,
     EXPORTMAT,
-    TRANSPOSEMAT
+    TRANSPOSEMAT,
+    GROUPBY
 };
 
 enum BinaryOperator {
@@ -47,6 +48,20 @@ enum SelectType {
     NO_SELECT_CLAUSE
 };
 
+enum JoinAlgorithm {
+    NESTED,
+    PARTHASH,
+    NO_JOIN_CLAUSE
+};
+
+enum AggregationType {
+    SUM,
+    AVG,
+    MIN,
+    MAX,
+    NO_AGG_CLAUSE
+};
+
 class ParsedQuery {
 
 public:
@@ -69,10 +84,12 @@ public:
 
     BinaryOperator joinBinaryOperator = NO_BINOP_CLAUSE;
     string joinResultRelationName = "";
+    JoinAlgorithm joinAlgorithm = NO_JOIN_CLAUSE;
     string joinFirstRelationName = "";
     string joinSecondRelationName = "";
     string joinFirstColumnName = "";
     string joinSecondColumnName = "";
+    int joinBufferSize = 3;
 
     string loadRelationName = "";
 
@@ -101,6 +118,13 @@ public:
 
     string sourceFileName = "";
 
+    string groupByResultRelationName = "";
+    string groupByRelationName = "";
+    string groupByColumnName = "";
+    AggregationType groupByAggregate = NO_AGG_CLAUSE;
+    string groupByAggregateColumnName = "";
+
+
     ParsedQuery();
     void clear();
 };
@@ -124,6 +148,7 @@ bool syntacticParseLOADMAT();
 bool syntacticParsePRINTMAT();
 bool syntacticParseEXPORTMAT();
 bool syntacticParseTRANSPOSEMAT();
+bool syntacticParseGROUPBY();
 
 bool isFileExists(string tableName);
 bool isQueryFile(string fileName);

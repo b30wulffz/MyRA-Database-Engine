@@ -40,6 +40,8 @@ bool semanticParse()
         return semanticParseEXPORTMAT();
     case TRANSPOSEMAT:
         return semanticParseTRANSPOSEMAT();
+    case GROUPBY:
+        return semanticParseGROUPBY();
     default:
         cout << "SEMANTIC ERROR" << endl;
     }

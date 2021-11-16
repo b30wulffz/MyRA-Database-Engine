@@ -55,6 +55,8 @@ bool syntacticParse()
                 return syntacticParseDISTINCT();
             else if (possibleQueryType == "SORT")
                 return syntacticParseSORT();
+            else if (possibleQueryType == "GROUP")
+                return syntacticParseGROUPBY();
             else {
                 cout << "SYNTAX ERROR" << endl;
                 return false;
@@ -90,10 +92,12 @@ void ParsedQuery::clear()
 
     this->joinBinaryOperator = NO_BINOP_CLAUSE;
     this->joinResultRelationName = "";
+    this->joinAlgorithm = NO_JOIN_CLAUSE;
     this->joinFirstRelationName = "";
     this->joinSecondRelationName = "";
     this->joinFirstColumnName = "";
     this->joinSecondColumnName = "";
+    this->joinBufferSize = 3;
 
     this->loadRelationName = "";
 

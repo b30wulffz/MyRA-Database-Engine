@@ -16,9 +16,8 @@ enum IndexingStrategy {
  *
  */
 class Table {
-    vector<unordered_set<int>> distinctValuesInColumns;
-
 public:
+    vector<unordered_set<int>> distinctValuesInColumns;
     string sourceFileName = "";
     string tableName = "";
     vector<string> columns;
@@ -34,6 +33,7 @@ public:
 
     bool extractColumnNames(string firstLine);
     bool blockify();
+    void initStatistics();
     void updateStatistics(vector<int> row);
     Table();
     Table(string tableName);

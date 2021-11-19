@@ -71,22 +71,26 @@ void executeGROUPBY()
 {
     logger.log("executeGROUPBY");
 
+    BLOCK_ACCESSES = 0;
+
     Table* inputTable = tableCatalogue.getTable(parsedQuery.groupByRelationName);
 
     string resultColumnName;
-    if(parsedQuery.groupByAggregate == MAX){
-        resultColumnName = "MAX" + parsedQuery.groupByAggregateColumnName;
+    switch(parsedQuery.groupByAggregate){
+        case MAX:
+            resultColumnName = "MAX";
+            break;
+        case MIN:
+            resultColumnName = "MIN";
+            break;
+        case SUM:
+            resultColumnName = "SUM";
+            break;
+        case AVG:
+            resultColumnName = "AVG";
+            break;
     }
-    else if(parsedQuery.groupByAggregate == MIN){
-        resultColumnName = "MIN" + parsedQuery.groupByAggregateColumnName;
-    }
-    else if(parsedQuery.groupByAggregate == SUM){
-        resultColumnName = "SUM" + parsedQuery.groupByAggregateColumnName;
-    }
-    else if(parsedQuery.groupByAggregate == AVG){
-        resultColumnName = "AVG" + parsedQuery.groupByAggregateColumnName;
-    }
-
+    resultColumnName += parsedQuery.groupByAggregateColumnName;
     vector<string> columns = {parsedQuery.groupByColumnName, resultColumnName};
     
     Table* resultTable = new Table(parsedQuery.groupByResultRelationName, columns);
@@ -96,47 +100,60 @@ void executeGROUPBY()
 
     int grouppedColumnIndex = inputTable->getColumnIndex(parsedQuery.groupByColumnName);
     int aggregateColumnIndex = inputTable->getColumnIndex(parsedQuery.groupByAggregateColumnName);
-    for(auto key: inputTable->distinctValuesInColumns[grouppedColumnIndex]){
-        int aggregateValue, rowCount = 0;
-        if(parsedQuery.groupByAggregate == MAX){   
-            aggregateValue = INT_MIN;
-        }
-        else if(parsedQuery.groupByAggregate == MIN){
-            aggregateValue = INT_MAX;
-        }
-        else if(parsedQuery.groupByAggregate == SUM || parsedQuery.groupByAggregate == AVG){
-            aggregateValue = 0;
-        }
 
-        for(int blockId=0; blockId<inputTable->blockCount; blockId++){
-            Page* block = bufferManager.getPage(inputTable->tableName, blockId);
-            vector<vector<int>> rows = block->getRows();
-            for(int rowInd=0; rowInd<block->rowCount; rowInd++){
-                if(rows[rowInd][grouppedColumnIndex] == key){
-                    switch(parsedQuery.groupByAggregate){
-                        case MAX:
-                            if(rows[rowInd][aggregateColumnIndex] > aggregateValue)
-                                aggregateValue = rows[rowInd][aggregateColumnIndex];
-                            break;
-                        case MIN:
-                            if(rows[rowInd][aggregateColumnIndex] < aggregateValue)
-                                aggregateValue = rows[rowInd][aggregateColumnIndex];
-                            break;
-                        case SUM:
-                            aggregateValue += rows[rowInd][aggregateColumnIndex];
-                            break;
-                        case AVG:
-                            aggregateValue += rows[rowInd][aggregateColumnIndex];
-                            rowCount++;
-                            break;
-                    }
-                }
+    unordered_map<int, int> groupByMap, rowCountMap;
+    for(auto key: inputTable->distinctValuesInColumns[grouppedColumnIndex]){
+        switch(parsedQuery.groupByAggregate){
+            case MAX:
+                groupByMap[key] = INT_MIN;
+                break;
+            case MIN:
+                groupByMap[key] = INT_MAX;
+                break;
+            case SUM:
+            case AVG:
+                groupByMap[key] = 0;
+                break;
+        }
+        rowCountMap[key] = 0;
+    }
+
+    for(int blockId=0; blockId<inputTable->blockCount; blockId++){
+        Page* block = bufferManager.getPage(inputTable->tableName, blockId);
+        vector<vector<int>> rows = block->getRows();
+        for(int rowInd=0; rowInd<block->rowCount; rowInd++){
+            int grouppedColumnKey = rows[rowInd][grouppedColumnIndex];
+            switch(parsedQuery.groupByAggregate){
+                case MAX:
+                    if(rows[rowInd][aggregateColumnIndex] > groupByMap[grouppedColumnKey])
+                        groupByMap[grouppedColumnKey] = rows[rowInd][aggregateColumnIndex];
+                    break;
+                case MIN:
+                    if(rows[rowInd][aggregateColumnIndex] < groupByMap[grouppedColumnKey])
+                        groupByMap[grouppedColumnKey] = rows[rowInd][aggregateColumnIndex];
+                    break;
+                case SUM:
+                case AVG:
+                    groupByMap[grouppedColumnKey] += rows[rowInd][aggregateColumnIndex];
+                    break;
             }
+            rowCountMap[grouppedColumnKey]++;
         }
-        if(parsedQuery.groupByAggregate == AVG){
-            aggregateValue /= rowCount;
+    }
+
+    for(auto key: inputTable->distinctValuesInColumns[grouppedColumnIndex]){
+        vector<int> row;
+        row.push_back(key);
+        switch(parsedQuery.groupByAggregate){
+            case MAX:
+            case MIN:
+            case SUM:
+                row.push_back(groupByMap[key]);
+                break;
+            case AVG:
+                row.push_back(groupByMap[key]/rowCountMap[key]);
+                break;
         }
-        vector<int> row = {key, aggregateValue};
         rowsInResultPage.push_back(row);
         blockRowCounter++;
         resultTable->updateStatistics(row);
@@ -158,6 +175,7 @@ void executeGROUPBY()
     }
 
     tableCatalogue.insertTable(resultTable);
+    cout << "Block Accesses: " << BLOCK_ACCESSES << endl;
     cout << "Generated Table "<< resultTable->tableName << ". Column Count: " << resultTable->columnCount << " Row Count: " << resultTable->rowCount << endl;
     return;
 }

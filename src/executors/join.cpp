@@ -1,7 +1,7 @@
 #include "global.h"
 /**
  * @brief 
- * SYNTAX: R <- JOIN relation_name1, relation_name2 ON column_name1 bin_op column_name2
+ * SYNTAX: <new_relation_name> <- JOIN USING NESTED|PARTHASH <table1>, <table2> ON <column1> <bin_op> <column2> BUFFER <buffer_size>
  */
 bool syntacticParseJOIN()
 {
